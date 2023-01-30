@@ -60,13 +60,15 @@ public class LinearProgram {
 
         final MPSolver.ResultStatus resultStatus = solver.solve();
 
-        if (resultStatus == MPSolver.ResultStatus.FEASIBLE) {
+        System.out.println("ResultStatus: " + resultStatus.toString());
+
+        if (resultStatus == MPSolver.ResultStatus.FEASIBLE || resultStatus == MPSolver.ResultStatus.OPTIMAL) {
             System.out.println("Solution:");
             System.out.println("Objective value = " + objective.value());
             System.out.println("x = " + mpVariables.get(0).solutionValue());
             System.out.println("y = " + mpVariables.get(1).solutionValue());
         } else {
-            System.err.println("The problem does not have an optimal solution!");
+            System.err.println("Did not find a solution");
         }
 
         System.out.println("\nAdvanced usage:");
