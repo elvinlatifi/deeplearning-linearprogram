@@ -7,4 +7,16 @@ public class Variable {
         this.ub = ub;
         this.name = name;
     }
+
+    public double getLb() {
+        return lb;
+    }
+
+    public double getUb() {
+        return ub;
+    }
+
+    public String getName() {
+        return name;
+    }
 }

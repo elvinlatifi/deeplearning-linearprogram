@@ -12,4 +12,20 @@ public class Constraint {
         this.name = name;
         this.coefficients = coefficients;
     }
+
+    public double getLb() {
+        return lb;
+    }
+
+    public double getUb() {
+        return ub;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public ArrayList<Double> getCoefficients() {
+        return coefficients;
+    }
 }

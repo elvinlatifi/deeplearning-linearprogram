@@ -7,4 +7,8 @@ public class Objective {
     Objective(ArrayList<Double> coefficients) {
         this.coefficients = coefficients;
     }
+
+    public ArrayList<Double> getCoefficients() {
+        return coefficients;
+    }
 }
