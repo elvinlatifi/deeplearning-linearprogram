@@ -29,30 +29,26 @@ public class LinearProgram {
         return variables;
     }
 
-    protected boolean solve()
-    {
+    protected boolean solve() {
         MPSolver solver = MPSolver.createSolver("GLOP");
 
         ArrayList<MPVariable> mpVariables = new ArrayList<>();
 
-        for (var var : variables)
-        {
+        for (Variable var : variables) {
             mpVariables.add(solver.makeNumVar(var.getLb(), var.getUb(), var.getName()));
         }
 
         ArrayList<MPConstraint> mpConstraints = new ArrayList<>();
 
-        for (var constr : constraints)
-        {
+        for (Constraint constr : constraints) {
             mpConstraints.add(solver.makeConstraint(constr.getLb(), constr.getUb(), constr.getName()));
         }
 
         MPObjective objective = solver.objective();
 
-        var obj_coef = this.objective.getCoefficients();
+        ArrayList<Double> obj_coef = this.objective.getCoefficients();
 
-        for (var i = 0; i < mpVariables.size(); i++)
-        {
+        for (int i = 0; i < mpVariables.size(); i++) {
             objective.setCoefficient(mpVariables.get(i), obj_coef.get(i));
         }
 

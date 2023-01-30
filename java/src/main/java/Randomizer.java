@@ -30,12 +30,12 @@ public class Randomizer {
         const_coef.add(3.0);
         const_coef.add(-2.0);
 
-        var c1 = new Constraint(-infinity, 3000.0, "c1", const_coef);
+        var c1 = new Constraint(-infinity, 14.0, "c1", const_coef);
 
         var variables = new ArrayList<Variable>();
 
-        variables.add(new Variable(-10.0, infinity, "x"));
-        variables.add(new Variable(-10.0, infinity, "y"));
+        variables.add(new Variable(0.0, infinity, "x"));
+        variables.add(new Variable(0.0, infinity, "y"));
         var c_list = new ArrayList<Constraint>();
         c_list.add(c1);
 
