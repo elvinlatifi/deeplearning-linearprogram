@@ -60,7 +60,7 @@ public class LinearProgram {
 
         final MPSolver.ResultStatus resultStatus = solver.solve();
 
-        if (resultStatus == MPSolver.ResultStatus.OPTIMAL) {
+        if (resultStatus == MPSolver.ResultStatus.FEASIBLE) {
             System.out.println("Solution:");
             System.out.println("Objective value = " + objective.value());
             System.out.println("x = " + mpVariables.get(0).solutionValue());
