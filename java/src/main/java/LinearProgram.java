@@ -38,10 +38,15 @@ public class LinearProgram {
             mpVariables.add(solver.makeNumVar(var.getLb(), var.getUb(), var.getName()));
         }
 
-        ArrayList<MPConstraint> mpConstraints = new ArrayList<>();
+
 
         for (Constraint constr : constraints) {
-            mpConstraints.add(solver.makeConstraint(constr.getLb(), constr.getUb(), constr.getName()));
+            MPConstraint c = solver.makeConstraint(constr.getLb(), constr.getUb(), constr.getName());
+            ArrayList<Double> constr_coef = constr.getCoefficients();
+            for (int i=0; i<mpVariables.size(); i++) {
+                c.setCoefficient(mpVariables.get(i),constr_coef.get(i));
+            }
+
         }
 
         MPObjective objective = solver.objective();
@@ -53,6 +58,7 @@ public class LinearProgram {
         }
 
         objective.setMaximization();
+        System.out.println(solver.exportModelAsLpFormat());
 
         final MPSolver.ResultStatus resultStatus = solver.solve();
 

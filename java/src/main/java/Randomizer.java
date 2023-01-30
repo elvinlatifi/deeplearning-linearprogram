@@ -17,22 +17,21 @@ public class Randomizer {
 
         double infinity = java.lang.Double.POSITIVE_INFINITY;
 
-        var obj_data = new ArrayList<Double>();
-        var constrs = new ArrayList<Constraint>();
+        ArrayList<Double> obj_data = new ArrayList<Double>();
 
-        obj_data.add(2.0);
-        obj_data.add(5.0);
+        obj_data.add(3.0);
+        obj_data.add(4.0);
 
-        var obj = new Objective(obj_data);
+        Objective obj = new Objective(obj_data);
 
-        var const_coef = new ArrayList<Double>();
+        ArrayList<Double> const_coef = new ArrayList<Double>();
 
-        const_coef.add(3.0);
-        const_coef.add(-2.0);
+        const_coef.add(1.0);
+        const_coef.add(2.0);
 
-        var c1 = new Constraint(-infinity, 14.0, "c1", const_coef);
+        Constraint c1 = new Constraint(-infinity, 14, "c1", const_coef);
 
-        var variables = new ArrayList<Variable>();
+        ArrayList<Variable> variables = new ArrayList<Variable>();
 
         variables.add(new Variable(0.0, infinity, "x"));
         variables.add(new Variable(0.0, infinity, "y"));
