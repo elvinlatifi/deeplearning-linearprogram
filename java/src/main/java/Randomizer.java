@@ -82,7 +82,7 @@ public class Randomizer {
         int convertible = 0;
         int incovertible = 0;
 
-        for (int i = 0; i < 100000; i++) {
+        for (int i = 0; i < 10000; i++) {
             LinearProgram lp = generateLinearProgram(rand.nextInt(2, 5)); // Generate Linear Program with 2,3 or 4 variables
             LinearProgram result;
             if (lp.solve()) {
@@ -184,39 +184,6 @@ public class Randomizer {
         }
 
         System.out.println("Dataset generated! Convertible count: " + convertible + " Inconvertible count: " + incovertible);
-    }
-
-    private static LinearProgram generate2() {
-        double infinity = java.lang.Double.POSITIVE_INFINITY;
-        ArrayList<Double> obj_data = new ArrayList<Double>();
-
-        obj_data.add(rand.nextDouble(100));
-        obj_data.add(rand.nextDouble(100));
-
-        Objective obj = new Objective(obj_data);
-
-        ArrayList<Double> const_coef = new ArrayList<Double>();
-
-        const_coef.add(rand.nextDouble(-50, 50));
-        const_coef.add(rand.nextDouble(-50, 50));
-
-        ArrayList<Double> const_coef2 = new ArrayList<Double>();
-
-        const_coef2.add(rand.nextDouble(-50, 50));
-        const_coef2.add(rand.nextDouble(-50, 50));
-
-        Constraint c1 = new Constraint(-infinity, rand.nextDouble(100), "c1", const_coef);
-        Constraint c2 = new Constraint(rand.nextDouble(-100, 0), infinity, "c2", const_coef2);
-
-        ArrayList<Variable> variables = new ArrayList<Variable>();
-
-        variables.add(new Variable(0.0, infinity, "x"));
-        variables.add(new Variable(0.0, infinity, "y"));
-        ArrayList<Constraint> c_list = new ArrayList<>();
-        c_list.add(c1);
-        c_list.add(c2);
-
-        return new LinearProgram(obj, c_list, variables);
     }
 
     private static LinearProgram generateLinearProgram(int nrOfVariables) {
