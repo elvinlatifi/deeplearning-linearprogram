@@ -11,4 +11,10 @@ public class Objective {
     public ArrayList<Double> getCoefficients() {
         return coefficients;
     }
+
+    public void flipSign(ArrayList<Integer> indices) {
+        for (Integer i: indices) {
+            coefficients.set(i, coefficients.get(i) *-1);
+        }
+    }
 }
