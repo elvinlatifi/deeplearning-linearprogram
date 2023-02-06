@@ -6,6 +6,7 @@ import com.google.ortools.linearsolver.MPVariable;
 import java.util.ArrayList;
 
 public class LinearProgram {
+    private boolean convertible;
     private Objective objective;
 
     private ArrayList<Constraint> constraints;
@@ -69,14 +70,23 @@ public class LinearProgram {
             System.out.println("Objective value = " + objective.value());
             System.out.println("x = " + mpVariables.get(0).solutionValue());
             System.out.println("y = " + mpVariables.get(1).solutionValue());
+            return true;
         } else {
             System.err.println("Did not find a solution");
+            return false;
         }
 
-        System.out.println("\nAdvanced usage:");
-        System.out.println("Problem solved in " + solver.wallTime() + " milliseconds");
-        System.out.println("Problem solved in " + solver.iterations() + " iterations");
+    }
 
-        return true;
+    public void flipSign(ArrayList<Integer> indices) {
+        objective.flipSign(indices);
+    }
+
+    public void setConvertible() {
+        convertible = true;
+    }
+
+    public boolean isConvertible() {
+        return convertible;
     }
 }
