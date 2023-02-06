@@ -30,7 +30,7 @@ public class LinearProgram {
         return variables;
     }
 
-    protected boolean solve() {
+    private MPSolver generateSolver() {
         MPSolver solver = MPSolver.createSolver("GLOP");
 
         ArrayList<MPVariable> mpVariables = new ArrayList<>();
@@ -38,8 +38,6 @@ public class LinearProgram {
         for (Variable var : variables) {
             mpVariables.add(solver.makeNumVar(var.getLb(), var.getUb(), var.getName()));
         }
-
-
 
         for (Constraint constr : constraints) {
             MPConstraint c = solver.makeConstraint(constr.getLb(), constr.getUb(), constr.getName());
@@ -59,6 +57,12 @@ public class LinearProgram {
         }
 
         objective.setMaximization();
+
+        return solver;
+    }
+
+    protected boolean solve() {
+        MPSolver solver = generateSolver();
         //System.out.println(solver.exportModelAsLpFormat());
 
         final MPSolver.ResultStatus resultStatus = solver.solve();
@@ -88,5 +92,11 @@ public class LinearProgram {
 
     public boolean isConvertible() {
         return convertible;
+    }
+
+    @Override
+    public String toString() {
+        MPSolver solver = generateSolver();
+        return solver.exportModelAsLpFormat();
     }
 }

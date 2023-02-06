@@ -1,16 +1,25 @@
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.ortools.Loader;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Random;
 public class Randomizer {
     private static Random rand = new Random();
+    private static final String output_path = "dataset\\";
     double infinity = java.lang.Double.POSITIVE_INFINITY;
     public static void main(String[] args)
     {
         Loader.loadNativeLibraries();
         //Test();
         //generateData();
-        generateDataGenerationStatistics();
+        //generateDataGenerationStatistics();
+        generateDataToOutputFolder(100);
     }
 
     public static void Test() {
@@ -99,6 +108,84 @@ public class Randomizer {
         }
     }
 
+    public static void generateDataToOutputFolder(int count)
+    {
+        int useless = 0;
+        int convertible = 0;
+        int incovertible = 0;
+
+        var gb = new GsonBuilder();
+        //this fixes the issue with infinities
+        gb.serializeSpecialFloatingPointValues();
+
+        Gson gson = gb.create();
+
+        //creates the folder structure
+        try {
+            Files.createDirectories(Paths.get(output_path + "\\conv"));
+            Files.createDirectories(Paths.get(output_path + "\\inconv"));
+        }
+        catch(IOException e)
+        {
+            System.err.println("Could not create folders?");
+            return;
+        }
+
+        System.out.println("Generating " + count + " datasets to output folder: " + output_path);
+
+        for (int i = 0; i < count; i++) {
+            String final_path = "";
+            boolean use_result = false;
+            LinearProgram lp = generateLinearProgram(rand.nextInt(2, 5)); // Generate Linear Program with 2,3 or 4 variables
+            LinearProgram result;
+            if (lp.solve()) {
+                result = flipSigns(lp, true);
+
+                if (result != null)
+                {
+                    use_result = true;
+                }
+            } else {
+                result = flipSigns(lp, false);
+            }
+            if (result == null) {
+                // DO NOTHING
+                useless++;
+                continue;
+            } else if (result.isConvertible()) {
+                // SEND TO CONVERTIBLE DATASET
+                final_path = output_path + "conv\\" + "conv_" + i + ".json";
+                convertible++;
+            } else {
+                // SEND TO INCONVERTIBLE DATASET
+                final_path = output_path + "inconv\\" + "inconv_" + i + ".json";
+                incovertible++;
+            }
+
+            String output;
+
+            if (use_result) {
+                output = gson.toJson(result);
+            }
+            else {
+                output = gson.toJson(lp);
+            }
+
+            try {
+                BufferedWriter writer = new BufferedWriter(new FileWriter(final_path));
+                writer.write(output);
+
+                writer.close();
+            }
+            catch (IOException e)
+            {
+                System.err.println("Could not write file: " + final_path);
+            }
+        }
+
+        System.out.println("Dataset generated! Convertible count: " + convertible + " Inconvertible count: " + incovertible);
+    }
+
     private static LinearProgram generate2() {
         double infinity = java.lang.Double.POSITIVE_INFINITY;
         ArrayList<Double> obj_data = new ArrayList<Double>();
@@ -178,7 +265,7 @@ public class Randomizer {
             boolean feasible = copy.solve();
             if (feasible && !originallyFeasible) {
                 copy.setConvertible();
-                return copy; // Originally not feasible and made feasible, CONVERTIBLE DATASET
+                return lp; // Originally not feasible and made feasible, CONVERTIBLE DATASET
             }
             else if (!feasible && originallyFeasible) {
                 copy.setConvertible();
