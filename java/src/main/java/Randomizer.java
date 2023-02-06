@@ -9,7 +9,8 @@ public class Randomizer {
     {
         Loader.loadNativeLibraries();
         //Test();
-        generateData();
+        //generateData();
+        generateDataGenerationStatistics();
     }
 
     public static void Test() {
@@ -64,8 +65,38 @@ public class Randomizer {
             // SEND TO INCONVERTIBLE DATASET
             System.out.println("INCOVERTIBLE");
         }
+    }
 
+    public static void generateDataGenerationStatistics()
+    {
+        int useless = 0;
+        int convertible = 0;
+        int incovertible = 0;
 
+        for (int i = 0; i < 100000; i++) {
+            LinearProgram lp = generateLinearProgram(rand.nextInt(2, 5)); // Generate Linear Program with 2,3 or 4 variables
+            LinearProgram result;
+            if (lp.solve()) {
+                result = flipSigns(lp, true);
+            } else {
+                result = flipSigns(lp, false);
+            }
+            if (result == null) {
+                // DO NOTHING
+                //System.out.println("USELESS");
+                useless++;
+            } else if (result.isConvertible()) {
+                // SEND TO CONVERTIBLE DATASET
+                //System.out.println("CONVERTIBLE");
+                convertible++;
+            } else {
+                // SEND TO INCONVERTIBLE DATASET
+                //System.out.println("INCOVERTIBLE");
+                incovertible++;
+            }
+
+            System.out.println("Useless: " + useless + " Convertible: " + convertible + " Inconvertible: " + incovertible);
+        }
     }
 
     private static LinearProgram generate2() {

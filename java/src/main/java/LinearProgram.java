@@ -59,20 +59,20 @@ public class LinearProgram {
         }
 
         objective.setMaximization();
-        System.out.println(solver.exportModelAsLpFormat());
+        //System.out.println(solver.exportModelAsLpFormat());
 
         final MPSolver.ResultStatus resultStatus = solver.solve();
 
-        System.out.println("ResultStatus: " + resultStatus.toString());
+        //System.out.println("ResultStatus: " + resultStatus.toString());
 
         if (resultStatus == MPSolver.ResultStatus.FEASIBLE || resultStatus == MPSolver.ResultStatus.OPTIMAL) {
-            System.out.println("Solution:");
-            System.out.println("Objective value = " + objective.value());
-            System.out.println("x = " + mpVariables.get(0).solutionValue());
-            System.out.println("y = " + mpVariables.get(1).solutionValue());
+            //System.out.println("Solution:");
+            //System.out.println("Objective value = " + objective.value());
+            //System.out.println("x = " + mpVariables.get(0).solutionValue());
+            //System.out.println("y = " + mpVariables.get(1).solutionValue());
             return true;
         } else {
-            System.err.println("Did not find a solution");
+            //System.err.println("Did not find a solution");
             return false;
         }
 
