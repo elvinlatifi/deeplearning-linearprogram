@@ -6,7 +6,7 @@ import com.google.ortools.linearsolver.MPVariable;
 import java.util.ArrayList;
 
 public class LinearProgram {
-    private boolean convertible;
+    transient private boolean convertible;
     private Objective objective;
 
     private ArrayList<Constraint> constraints;
