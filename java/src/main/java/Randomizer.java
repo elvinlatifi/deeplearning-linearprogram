@@ -2,9 +2,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.ortools.Loader;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -19,7 +17,8 @@ public class Randomizer {
         //Test();
         //generateData();
         //generateDataGenerationStatistics();
-        generateDataToOutputFolder(100);
+        generateDataToOutputFolder(1000);
+        validateDataSet();
     }
 
     public static void Test() {
@@ -184,6 +183,29 @@ public class Randomizer {
         }
 
         System.out.println("Dataset generated! Convertible count: " + convertible + " Inconvertible count: " + incovertible);
+    }
+
+    private static boolean validateDataSet() {
+        Gson gson = new Gson();
+        File dir = new File(output_path + "//conv");
+        File[] dirList = dir.listFiles();
+        if (dirList != null) {
+            for (File file : dirList) {
+                try {
+                    BufferedReader read = new BufferedReader(new FileReader(file.getAbsolutePath()));
+                    LinearProgram lp = gson.fromJson(read.readLine(), LinearProgram.class);
+                    if (lp.solve()) {
+                        System.out.println("Invalid dataset!" + file.getName());
+                    }
+                } catch (FileNotFoundException e) {
+                    System.out.println(e.getMessage());
+                } catch (IOException e) {
+                    System.out.println(e.getMessage());
+                }
+            }
+        }
+        System.out.print("Dataset valid!");
+        return true;
     }
 
     private static LinearProgram generateLinearProgram(int nrOfVariables) {
