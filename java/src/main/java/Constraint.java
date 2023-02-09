@@ -13,6 +13,13 @@ public class Constraint {
         this.coefficients = coefficients;
     }
 
+    Constraint(Constraint c) {
+        this.lb = c.getLb();
+        this.ub = c.getUb();
+        this.name = c.getName();
+        this.coefficients = new ArrayList<Double>(c.getCoefficients());
+    }
+
     public double getLb() {
         return lb;
     }

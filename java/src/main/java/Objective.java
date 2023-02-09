@@ -8,6 +8,11 @@ public class Objective {
         this.coefficients = coefficients;
     }
 
+    Objective(Objective o)
+    {
+        coefficients = new ArrayList<Double>(o.getCoefficients());
+    }
+
     public ArrayList<Double> getCoefficients() {
         return coefficients;
     }

@@ -8,6 +8,13 @@ public class Variable {
         this.name = name;
     }
 
+    Variable(Variable v)
+    {
+        this.lb = v.getLb();
+        this.ub = v.getUb();
+        this.name = v.getName();
+    }
+
     public double getLb() {
         return lb;
     }

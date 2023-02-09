@@ -1,6 +1,7 @@
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.ortools.Loader;
+import org.apache.commons.io.FileUtils;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -17,7 +18,7 @@ public class Randomizer {
         //Test();
         //generateData();
         //generateDataGenerationStatistics();
-        generateDataToOutputFolder(1000);
+        generateDataToOutputFolder(100);
         validateDataSet();
     }
 
@@ -117,6 +118,13 @@ public class Randomizer {
         //this fixes the issue with infinities
         gb.serializeSpecialFloatingPointValues();
 
+        try {
+            FileUtils.deleteDirectory(new File(output_path));
+        } catch (IOException e) {
+            System.err.println("Could not delete dataset directory!?");
+            return;
+        }
+
         Gson gson = gb.create();
 
         //creates the folder structure
@@ -134,16 +142,11 @@ public class Randomizer {
 
         for (int i = 0; i < count; i++) {
             String final_path = "";
-            boolean use_result = false;
             LinearProgram lp = generateLinearProgram(rand.nextInt(2, 5)); // Generate Linear Program with 2,3 or 4 variables
             LinearProgram result;
+
             if (lp.solve()) {
                 result = flipSigns(lp, true);
-
-                if (result != null)
-                {
-                    use_result = true;
-                }
             } else {
                 result = flipSigns(lp, false);
             }
@@ -155,6 +158,8 @@ public class Randomizer {
                 // SEND TO CONVERTIBLE DATASET
                 final_path = output_path + "conv\\" + "conv_" + i + ".json";
                 convertible++;
+
+                var test = result.solve();
             } else {
                 // SEND TO INCONVERTIBLE DATASET
                 final_path = output_path + "inconv\\" + "inconv_" + i + ".json";
@@ -163,12 +168,7 @@ public class Randomizer {
 
             String output;
 
-            if (use_result) {
-                output = gson.toJson(result);
-            }
-            else {
-                output = gson.toJson(lp);
-            }
+            output = gson.toJson(result);
 
             try {
                 BufferedWriter writer = new BufferedWriter(new FileWriter(final_path));
@@ -195,7 +195,8 @@ public class Randomizer {
                     BufferedReader read = new BufferedReader(new FileReader(file.getAbsolutePath()));
                     LinearProgram lp = gson.fromJson(read.readLine(), LinearProgram.class);
                     if (lp.solve()) {
-                        System.out.println("Invalid dataset!" + file.getName());
+                        System.out.println("Invalid dataset! file: " + file.getName());
+                        return false;
                     }
                 } catch (FileNotFoundException e) {
                     System.out.println(e.getMessage());
@@ -240,7 +241,7 @@ public class Randomizer {
         ArrayList<Integer> indices = new ArrayList<>();
 
         for (int i = 0; i<Math.pow(2, variableNum);i++) {
-            LinearProgram copy = lp;
+            LinearProgram copy = new LinearProgram(lp);
             String bin = Integer.toBinaryString(i);
             while (bin.length() < variableNum) {
                 bin = "0" + bin;
@@ -253,7 +254,7 @@ public class Randomizer {
             copy.flipSign(indices);
             boolean feasible = copy.solve();
             if (feasible && !originallyFeasible) {
-                copy.setConvertible();
+                lp.setConvertible();
                 return lp; // Originally not feasible and made feasible, CONVERTIBLE DATASET
             }
             else if (!feasible && originallyFeasible) {

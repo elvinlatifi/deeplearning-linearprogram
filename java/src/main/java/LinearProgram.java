@@ -18,6 +18,24 @@ public class LinearProgram {
         this.variables = variables;
     }
 
+    LinearProgram(LinearProgram lp) {
+        this.objective = new Objective(lp.getObjective());
+
+        this.constraints = new ArrayList<Constraint>();
+
+        for (var c : lp.getConstraints())
+        {
+            this.constraints.add(new Constraint(c));
+        }
+
+        this.variables = new ArrayList<Variable>();
+
+        for (var v : lp.getVariables())
+        {
+            this.variables.add(new Variable(v));
+        }
+    }
+
     public Objective getObjective() {
         return objective;
     }
