@@ -18,7 +18,7 @@ public class Randomizer {
         //Test();
         //generateData();
         //generateDataGenerationStatistics();
-        generateDataToOutputFolder(100);
+        generateDataToOutputFolder(10000);
         validateDataSet();
     }
 
@@ -226,8 +226,8 @@ public class Randomizer {
 
         Objective obj = new Objective(obj_data);
 
-        Constraint c1 = new Constraint(-infinity, rand.nextDouble(100), "c1", const_coef);
-        Constraint c2 = new Constraint(rand.nextDouble(-100, 0), infinity, "c2", const_coef2);
+        Constraint c1 = new Constraint(-infinity, rand.nextDouble(-100, 100), "c1", const_coef);
+        Constraint c2 = new Constraint(rand.nextDouble(-100, 100), infinity, "c2", const_coef2);
 
         ArrayList<Constraint> c_list = new ArrayList<>();
         c_list.add(c1);
