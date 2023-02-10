@@ -12,6 +12,8 @@ public class LinearProgram {
     private ArrayList<Constraint> constraints;
     private ArrayList<Variable> variables;
 
+    String[] binaryOutputFeature = new String[4];
+
     LinearProgram(Objective objective, ArrayList<Constraint> constraints, ArrayList<Variable> variables) {
         this.objective = objective;
         this.constraints = constraints;
@@ -112,9 +114,77 @@ public class LinearProgram {
         return convertible;
     }
 
+    public String[] getRelevantData() {
+        double nrOfVariables = variables.size();
+        ArrayList<String> data = new ArrayList<>();
+
+        // Add number of variables
+        data.add(nrOfVariables + "");
+
+        // Get the coefficients for the objective, use 0 as padding if less than 4 variables
+        for (int i=0;i<4;i++) {
+            if (i >= nrOfVariables) {
+                data.add("0");
+            }
+            else {
+                data.add(objective.getCoefficients().get(i) + "");
+            }
+        }
+
+        // Get the coefficients for the first constraint, use 0 as padding if less than 4 variables
+        for (int i=0; i<4;i++) {
+            if (i >= nrOfVariables) {
+                data.add("0");
+            }
+            else {
+                data.add(constraints.get(0).getCoefficients().get(i) + "");
+            }
+        }
+
+        // Get the upper bound
+        data.add(constraints.get(0).getUb() + "");
+        // Get the coefficients for the second constraint, use 0 as padding if less than 4 variables
+        for (int i=0; i<4;i++) {
+            if (i >= nrOfVariables) {
+                data.add("0");
+            }
+            else {
+                data.add(constraints.get(1).getCoefficients().get(i) + "");
+            }
+        }
+        data.add(constraints.get(1).getLb() + "");
+
+        String[] arr = new String[data.size()];
+        int i = 0;
+        for (String s : data) {
+            arr[i] = s;
+            i++;
+        }
+        return arr;
+    }
+
+    public void setBinaryOutputFeature(String bof) {
+        while (bof.length() < 4) {
+            bof = bof + "-1";
+        }
+        for (int i=0;i< variables.size();i++) {
+            binaryOutputFeature[i] = bof.charAt(i) +"";
+        }
+        for (int i = variables.size(); i<4; i++) {
+            binaryOutputFeature[i] = "-1";
+        }
+
+    }
+
+    public String[] getBinaryOutputFeature() {
+        return binaryOutputFeature;
+    }
+
     @Override
     public String toString() {
         MPSolver solver = generateSolver();
         return solver.exportModelAsLpFormat();
     }
+
+
 }
