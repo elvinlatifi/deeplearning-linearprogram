@@ -197,7 +197,7 @@ public class Randomizer {
 
         validateDataSet(directory_path);
 
-        System.out.println("Two datasets generated (train and reg)! Total count: " + total);
+        System.out.println("Dataset generated! Total count: " + total);
     }
 
     private static boolean validateDataSet(String dir_path) {
