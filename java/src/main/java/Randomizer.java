@@ -11,6 +11,7 @@ import java.util.Random;
 public class Randomizer {
     private static Random rand = new Random();
     private static final String output_path = "dataset\\";
+    private static final String train_output_path = "dataset_train\\";
     double infinity = java.lang.Double.POSITIVE_INFINITY;
     public static void main(String[] args)
     {
@@ -18,8 +19,8 @@ public class Randomizer {
         //Test();
         //generateData();
         //generateDataGenerationStatistics();
-        generateDataToOutputFolder(10000);
-        validateDataSet();
+        generateDatasets(10000, output_path);
+        generateDatasets(10000, train_output_path);
     }
 
     public static void Test() {
@@ -82,7 +83,7 @@ public class Randomizer {
         int convertible = 0;
         int incovertible = 0;
 
-        for (int i = 0; i < 10000; i++) {
+        for (int i = 0; i < 100000; i++) {
             LinearProgram lp = generateLinearProgram(rand.nextInt(2, 5)); // Generate Linear Program with 2,3 or 4 variables
             LinearProgram result;
             if (lp.solve()) {
@@ -108,9 +109,8 @@ public class Randomizer {
         }
     }
 
-    public static void generateDataToOutputFolder(int count)
-    {
-        int useless = 0;
+    public static void generateDatasets(int count, String directory_path) {
+        int total = 0; //unused
         int convertible = 0;
         int incovertible = 0;
 
@@ -119,7 +119,7 @@ public class Randomizer {
         gb.serializeSpecialFloatingPointValues();
 
         try {
-            FileUtils.deleteDirectory(new File(output_path));
+            FileUtils.deleteDirectory(new File(directory_path));
         } catch (IOException e) {
             System.err.println("Could not delete dataset directory!?");
             return;
@@ -129,8 +129,8 @@ public class Randomizer {
 
         //creates the folder structure
         try {
-            Files.createDirectories(Paths.get(output_path + "\\conv"));
-            Files.createDirectories(Paths.get(output_path + "\\inconv"));
+            Files.createDirectories(Paths.get(directory_path + "\\conv"));
+            Files.createDirectories(Paths.get(directory_path + "\\inconv"));
         }
         catch(IOException e)
         {
@@ -138,9 +138,10 @@ public class Randomizer {
             return;
         }
 
-        System.out.println("Generating " + count + " datasets to output folder: " + output_path);
+        System.out.println("Generating " + count + " datasets to output folder: " + directory_path);
 
-        for (int i = 0; i < count; i++) {
+        while(convertible != count || incovertible != count)
+        {
             String final_path = "";
             LinearProgram lp = generateLinearProgram(rand.nextInt(2, 5)); // Generate Linear Program with 2,3 or 4 variables
             LinearProgram result;
@@ -152,17 +153,28 @@ public class Randomizer {
             }
             if (result == null) {
                 // DO NOTHING
-                useless++;
                 continue;
             } else if (result.isConvertible()) {
                 // SEND TO CONVERTIBLE DATASET
-                final_path = output_path + "conv\\" + "conv_" + i + ".json";
+                //if count is reached for this type, skip writing more
+                if (convertible == count)
+                {
+                    continue;
+                }
+
+                final_path = directory_path + "conv\\" + "conv_" + total + ".txt";
                 convertible++;
 
                 var test = result.solve();
             } else {
                 // SEND TO INCONVERTIBLE DATASET
-                final_path = output_path + "inconv\\" + "inconv_" + i + ".json";
+                //if count is reached for this type, skip writing more
+                if (incovertible == count)
+                {
+                    continue;
+                }
+
+                final_path = directory_path + "inconv\\" + "inconv_" + total + ".txt";
                 incovertible++;
             }
 
@@ -180,32 +192,41 @@ public class Randomizer {
             {
                 System.err.println("Could not write file: " + final_path);
             }
+            total++;
         }
 
-        System.out.println("Dataset generated! Convertible count: " + convertible + " Inconvertible count: " + incovertible);
+        validateDataSet(directory_path);
+
+        System.out.println("Two datasets generated (train and reg)! Total count: " + total);
     }
 
-    private static boolean validateDataSet() {
+    private static boolean validateDataSet(String dir_path) {
+        String[] class_names = { "conv", "inconv" };
         Gson gson = new Gson();
-        File dir = new File(output_path + "//conv");
-        File[] dirList = dir.listFiles();
-        if (dirList != null) {
-            for (File file : dirList) {
-                try {
-                    BufferedReader read = new BufferedReader(new FileReader(file.getAbsolutePath()));
-                    LinearProgram lp = gson.fromJson(read.readLine(), LinearProgram.class);
-                    if (lp.solve()) {
-                        System.out.println("Invalid dataset! file: " + file.getName());
-                        return false;
+
+        for(var class_name : class_names)
+        {
+            File dir = new File(dir_path + class_name);
+            File[] dirList = dir.listFiles();
+            if (dirList != null) {
+                for (File file : dirList) {
+                    try {
+                        BufferedReader read = new BufferedReader(new FileReader(file.getAbsolutePath()));
+                        LinearProgram lp = gson.fromJson(read.readLine(), LinearProgram.class);
+                        if (lp.solve()) {
+                            System.out.println("Invalid dataset! file: " + file.getName());
+                            return false;
+                        }
+                    } catch (FileNotFoundException e) {
+                        System.out.println(e.getMessage());
+                    } catch (IOException e) {
+                        System.out.println(e.getMessage());
                     }
-                } catch (FileNotFoundException e) {
-                    System.out.println(e.getMessage());
-                } catch (IOException e) {
-                    System.out.println(e.getMessage());
                 }
             }
         }
-        System.out.print("Dataset valid!");
+
+        System.out.println("Dataset valid!");
         return true;
     }
 
@@ -234,7 +255,6 @@ public class Randomizer {
         c_list.add(c2);
         return new LinearProgram(obj, c_list, variables);
     }
-
 
     private static LinearProgram flipSigns(LinearProgram lp, boolean originallyFeasible) {
         int variableNum = lp.getVariables().size();
