@@ -1,12 +1,14 @@
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.ortools.Loader;
+import com.opencsv.CSVWriter;
 import org.apache.commons.io.FileUtils;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Random;
 public class Randomizer {
     private static Random rand = new Random();
@@ -19,8 +21,9 @@ public class Randomizer {
         //Test();
         //generateData();
         //generateDataGenerationStatistics();
-        generateDatasets(10000, output_path);
-        generateDatasets(10000, train_output_path);
+        //generateDatasets(10000, output_path);
+        //generateDatasets(10000, train_output_path);
+        generateCSV(100);
     }
 
     public static void Test() {
@@ -200,6 +203,60 @@ public class Randomizer {
         System.out.println("Dataset generated! Total count: " + total);
     }
 
+    public static void generateCSV(int count) {
+        int convertible = 0;
+        int inconvertible = 0;
+
+        try {
+            CSVWriter inputwriter = new CSVWriter(new FileWriter("input.csv"));
+            CSVWriter bofwriter = new CSVWriter(new FileWriter("bof.csv"));
+            while(convertible != count || inconvertible != count) {
+                LinearProgram lp = generateLinearProgram(rand.nextInt(2, 5)); // Generate Linear Program with 2,3 or 4 variables
+                LinearProgram result;
+
+                if (lp.solve()) {
+                    result = flipSigns(lp, true);
+                }
+                else {
+                    result = flipSigns(lp, false);
+                }
+                if (result == null) {
+                    // DO NOTHING
+                    continue;
+                }
+                else if (result.isConvertible()) {
+                    //if count is reached for this type, skip writing more
+                    if (convertible == count) {
+                        continue;
+                    }
+                    // SEND TO CONVERTIBLE DATASET
+                    String[] data = result.getRelevantData();
+                    inputwriter.writeNext(data);
+                    bofwriter.writeNext(result.getBinaryOutputFeature());
+                    convertible++;
+                }
+                else {
+                    //if count is reached for this type, skip writing more
+                    if (inconvertible == count) {
+                        continue;
+                    }
+                    // SEND TO INCONVERTIBLE DATASET
+                    String[] data = result.getRelevantData();
+                    inputwriter.writeNext(data);
+                    bofwriter.writeNext(result.getBinaryOutputFeature());
+                    inconvertible++;
+                }
+
+            }
+            inputwriter.close();
+            bofwriter.close();
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+        }
+
+        System.out.println("Dataset generated!");
+    }
+
     private static boolean validateDataSet(String dir_path) {
         String[] class_names = { "conv", "inconv" };
         Gson gson = new Gson();
@@ -275,15 +332,18 @@ public class Randomizer {
             boolean feasible = copy.solve();
             if (feasible && !originallyFeasible) {
                 lp.setConvertible();
+                lp.setBinaryOutputFeature(bin);
                 return lp; // Originally not feasible and made feasible, CONVERTIBLE DATASET
             }
             else if (!feasible && originallyFeasible) {
                 copy.setConvertible();
+                copy.setBinaryOutputFeature(bin);
                 return copy; // Originally feasible and made infeasible, CONVERTIBLE DATASET
             }
 
         }
         if (!originallyFeasible) {
+            lp.setBinaryOutputFeature("0".repeat(variableNum));
             return lp; // Originally infeasible and stayed infeasible after each sign flip, INCONVERTIBLE DATASET
         }
         return null; // Originally feasible and still feasible after each sign flip, USELESS
