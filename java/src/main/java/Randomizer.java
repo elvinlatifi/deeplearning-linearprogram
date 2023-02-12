@@ -23,7 +23,7 @@ public class Randomizer {
         //generateDataGenerationStatistics();
         //generateDatasets(10000, output_path);
         //generateDatasets(10000, train_output_path);
-        generateCSV2(20000);
+        generateCSV(100000);
     }
 
     public static void Test() {
@@ -366,16 +366,16 @@ public class Randomizer {
         ArrayList<Variable> variables = new ArrayList<Variable>();
 
         for (int i = 0; i < nrOfVariables; i++) {
-            obj_data.add(rand.nextDouble(100));
-            const_coef.add(rand.nextDouble(-50, 50));
-            const_coef2.add(rand.nextDouble(-50, 50));
+            obj_data.add((double) rand.nextInt(-10, 10));
+            const_coef.add((double) rand.nextInt(-10, 10));
+            const_coef2.add((double) rand.nextInt(-10, 10));
             variables.add(new Variable(0.0, infinity, variablesString.charAt(i) + ""));
         }
 
         Objective obj = new Objective(obj_data);
 
-        Constraint c1 = new Constraint(-infinity, rand.nextDouble(-100, -50), "c1", const_coef);
-        Constraint c2 = new Constraint(rand.nextDouble(50,100), infinity, "c2", const_coef2);
+        Constraint c1 = new Constraint(-infinity, rand.nextInt(-100, 0), "c1", const_coef);
+        Constraint c2 = new Constraint(rand.nextInt(100), infinity, "c2", const_coef2);
 
         ArrayList<Constraint> c_list = new ArrayList<>();
         c_list.add(c1);
