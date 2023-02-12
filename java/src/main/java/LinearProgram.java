@@ -116,48 +116,49 @@ public class LinearProgram {
 
     public String[] getRelevantData() {
         double nrOfVariables = variables.size();
-        ArrayList<String> data = new ArrayList<>();
+        ArrayList<Double> data = new ArrayList<>();
 
         // Add number of variables
-        data.add(nrOfVariables + "");
+        data.add(nrOfVariables);
 
         // Get the coefficients for the objective, use 0 as padding if less than 4 variables
         for (int i=0;i<4;i++) {
             if (i >= nrOfVariables) {
-                data.add("0");
+                data.add(0.0);
             }
             else {
-                data.add(objective.getCoefficients().get(i) + "");
+                data.add(objective.getCoefficients().get(i));
             }
         }
 
         // Get the coefficients for the first constraint, use 0 as padding if less than 4 variables
         for (int i=0; i<4;i++) {
             if (i >= nrOfVariables) {
-                data.add("0");
+                data.add(0.0);
             }
             else {
-                data.add(constraints.get(0).getCoefficients().get(i) + "");
+                data.add(constraints.get(0).getCoefficients().get(i));
             }
         }
 
         // Get the upper bound
-        data.add(constraints.get(0).getUb() + "");
+        data.add(constraints.get(0).getUb());
         // Get the coefficients for the second constraint, use 0 as padding if less than 4 variables
         for (int i=0; i<4;i++) {
             if (i >= nrOfVariables) {
-                data.add("0");
+                data.add(0.0);
             }
             else {
-                data.add(constraints.get(1).getCoefficients().get(i) + "");
+                data.add(constraints.get(1).getCoefficients().get(i));
             }
         }
-        data.add(constraints.get(1).getLb() + "");
+        data.add(constraints.get(1).getLb());
+
 
         String[] arr = new String[data.size()];
         int i = 0;
-        for (String s : data) {
-            arr[i] = s;
+        for (Double d : data) {
+            arr[i] = d.toString();
             i++;
         }
         return arr;

@@ -1,8 +1,8 @@
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.ortools.Loader;
-import com.opencsv.CSVWriter;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.csv.*;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -23,7 +23,7 @@ public class Randomizer {
         //generateDataGenerationStatistics();
         //generateDatasets(10000, output_path);
         //generateDatasets(10000, train_output_path);
-        generateCSV(100);
+        generateCSV2(20000);
     }
 
     public static void Test() {
@@ -208,10 +208,14 @@ public class Randomizer {
         int inconvertible = 0;
 
         try {
-            CSVWriter inputwriter = new CSVWriter(new FileWriter("input.csv"));
-            CSVWriter bofwriter = new CSVWriter(new FileWriter("bof.csv"));
+            CSVFormat format = CSVFormat.DEFAULT;
+            FileWriter inputfw = new FileWriter("input.csv");
+            FileWriter boffw = new FileWriter("bof.csv");
+            CSVPrinter inputwriter = new CSVPrinter(inputfw, format);
+            CSVPrinter bofwriter = new CSVPrinter(boffw, format);
+
             while(convertible != count || inconvertible != count) {
-                LinearProgram lp = generateLinearProgram(rand.nextInt(2, 5)); // Generate Linear Program with 2,3 or 4 variables
+                LinearProgram lp = generateLinearProgram(rand.nextInt(4, 5)); // Generate Linear Program with 2,3 or 4 variables
                 LinearProgram result;
 
                 if (lp.solve()) {
@@ -231,8 +235,8 @@ public class Randomizer {
                     }
                     // SEND TO CONVERTIBLE DATASET
                     String[] data = result.getRelevantData();
-                    inputwriter.writeNext(data);
-                    bofwriter.writeNext(result.getBinaryOutputFeature());
+                    inputwriter.printRecord(data);
+                    bofwriter.printRecord(result.getBinaryOutputFeature());
                     convertible++;
                 }
                 else {
@@ -242,13 +246,79 @@ public class Randomizer {
                     }
                     // SEND TO INCONVERTIBLE DATASET
                     String[] data = result.getRelevantData();
-                    inputwriter.writeNext(data);
-                    bofwriter.writeNext(result.getBinaryOutputFeature());
+                    inputwriter.printRecord(data);
+                    bofwriter.printRecord(result.getBinaryOutputFeature());
                     inconvertible++;
                 }
 
             }
+            inputfw.close();
+            boffw.close();
+            inputwriter.flush();
             inputwriter.close();
+            bofwriter.flush();
+            bofwriter.close();
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+        }
+
+        System.out.println("Dataset generated!");
+    }
+
+    public static void generateCSV2(int count) {
+        int convertible = 0;
+        int inconvertible = 0;
+
+        try {
+            CSVFormat format = CSVFormat.DEFAULT;
+            FileWriter inputfw = new FileWriter("input.csv");
+            FileWriter boffw = new FileWriter("bof.csv");
+            CSVPrinter inputwriter = new CSVPrinter(inputfw, format);
+            CSVPrinter bofwriter = new CSVPrinter(boffw, format);
+
+            while(convertible != count || inconvertible != count) {
+                LinearProgram lp = generateLinearProgram(rand.nextInt(4, 5)); // Generate Linear Program with 2,3 or 4 variables
+                LinearProgram result;
+
+                if (lp.solve()) {
+                    result = flipSigns(lp, true);
+                }
+                else {
+                    result = flipSigns(lp, false);
+                }
+                if (result == null) {
+                    // DO NOTHING
+                    continue;
+                }
+                else if (result.isConvertible()) {
+                    //if count is reached for this type, skip writing more
+                    if (convertible == count) {
+                        continue;
+                    }
+                    // SEND TO CONVERTIBLE DATASET
+                    String[] data = result.getRelevantData();
+                    inputwriter.printRecord(data);
+                    bofwriter.printRecord(1);
+                    convertible++;
+                }
+                else {
+                    //if count is reached for this type, skip writing more
+                    if (inconvertible == count) {
+                        continue;
+                    }
+                    // SEND TO INCONVERTIBLE DATASET
+                    String[] data = result.getRelevantData();
+                    inputwriter.printRecord(data);
+                    bofwriter.printRecord(0);
+                    inconvertible++;
+                }
+
+            }
+            inputfw.close();
+            boffw.close();
+            inputwriter.flush();
+            inputwriter.close();
+            bofwriter.flush();
             bofwriter.close();
         } catch (IOException e) {
             System.out.println(e.getMessage());
@@ -288,7 +358,7 @@ public class Randomizer {
     }
 
     private static LinearProgram generateLinearProgram(int nrOfVariables) {
-        String variablesString = "xyzm";
+        String variablesString = "xyzw";
         double infinity = java.lang.Double.POSITIVE_INFINITY;
         ArrayList<Double> obj_data = new ArrayList<Double>();
         ArrayList<Double> const_coef = new ArrayList<Double>();
@@ -304,8 +374,8 @@ public class Randomizer {
 
         Objective obj = new Objective(obj_data);
 
-        Constraint c1 = new Constraint(-infinity, rand.nextDouble(-100, 100), "c1", const_coef);
-        Constraint c2 = new Constraint(rand.nextDouble(-100, 100), infinity, "c2", const_coef2);
+        Constraint c1 = new Constraint(-infinity, rand.nextDouble(-100, -50), "c1", const_coef);
+        Constraint c2 = new Constraint(rand.nextDouble(50,100), infinity, "c2", const_coef2);
 
         ArrayList<Constraint> c_list = new ArrayList<>();
         c_list.add(c1);
