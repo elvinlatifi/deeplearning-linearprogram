@@ -23,7 +23,7 @@ public class Randomizer {
         //generateDataGenerationStatistics();
         //generateDatasets(10000, output_path);
         //generateDatasets(10000, train_output_path);
-        generateCSV(100000);
+        generateCSV(1000, 4);
     }
 
     public static void Test() {
@@ -203,7 +203,7 @@ public class Randomizer {
         System.out.println("Dataset generated! Total count: " + total);
     }
 
-    public static void generateCSV(int count) {
+    public static void generateCSV(int count, int nrOfVariables) {
         int convertible = 0;
         int inconvertible = 0;
 
@@ -215,7 +215,7 @@ public class Randomizer {
             CSVPrinter bofwriter = new CSVPrinter(boffw, format);
 
             while(convertible != count || inconvertible != count) {
-                LinearProgram lp = generateLinearProgram(rand.nextInt(4, 5)); // Generate Linear Program with 2,3 or 4 variables
+                LinearProgram lp = generateLinearProgram(nrOfVariables);
                 LinearProgram result;
 
                 if (lp.solve()) {
@@ -358,7 +358,11 @@ public class Randomizer {
     }
 
     private static LinearProgram generateLinearProgram(int nrOfVariables) {
-        String variablesString = "xyzw";
+        if (nrOfVariables > 24) {
+            throw new IllegalArgumentException("Number of variables can not be higher than 24!");
+        }
+
+        String variablesString = "xyzwabcdefghijklmnopqrst";
         double infinity = java.lang.Double.POSITIVE_INFINITY;
         ArrayList<Double> obj_data = new ArrayList<Double>();
         ArrayList<Double> const_coef = new ArrayList<Double>();
