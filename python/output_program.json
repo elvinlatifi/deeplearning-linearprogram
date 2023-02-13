@@ -1,1 +1,0 @@
-{"objective":{"coefficients":[3.0,4.0]},"constraints":[{"lb":-Infinity,"ub":14.0,"name":"c1","coefficients":[1.0,2.0]}],"variables":[{"lb":0.0,"ub":Infinity,"name":"x"},{"lb":0.0,"ub":Infinity,"name":"y"}]}

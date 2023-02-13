@@ -12,8 +12,7 @@ import java.util.Arrays;
 import java.util.Random;
 public class Randomizer {
     private static Random rand = new Random();
-    private static final String output_path = "dataset\\";
-    private static final String train_output_path = "dataset_train\\";
+    private static final String dataset_path = "..\\dataset\\";
     double infinity = java.lang.Double.POSITIVE_INFINITY;
     public static void main(String[] args)
     {
@@ -23,7 +22,11 @@ public class Randomizer {
         //generateDataGenerationStatistics();
         //generateDatasets(10000, output_path);
         //generateDatasets(10000, train_output_path);
-        generateCSV(1000, 4);
+        var startTime = System.currentTimeMillis();
+        generateCSV(100000, 2);
+        var endTime = System.currentTimeMillis();
+
+        System.out.println("generateCSV took: " + (endTime - startTime) + " ms");
     }
 
     public static void Test() {
@@ -209,8 +212,8 @@ public class Randomizer {
 
         try {
             CSVFormat format = CSVFormat.DEFAULT;
-            FileWriter inputfw = new FileWriter("input.csv");
-            FileWriter boffw = new FileWriter("bof.csv");
+            FileWriter inputfw = new FileWriter(dataset_path + "input" + nrOfVariables + ".csv");
+            FileWriter boffw = new FileWriter(dataset_path + "bof" + nrOfVariables + ".csv");
             CSVPrinter inputwriter = new CSVPrinter(inputfw, format);
             CSVPrinter bofwriter = new CSVPrinter(boffw, format);
 
