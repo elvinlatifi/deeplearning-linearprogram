@@ -6,7 +6,7 @@ import java.util.Random;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class AltGenerator {
-    private int convertible;
+    private int convertible; 
     private int inconvertible;
 
     private static Random rand = new Random();
