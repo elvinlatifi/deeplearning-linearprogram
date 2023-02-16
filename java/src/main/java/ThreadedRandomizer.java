@@ -7,7 +7,6 @@ import java.util.Random;
 public class ThreadedRandomizer {
 
     private static Random rand = new Random();
-    private static final String dataset_path = "..\\dataset\\";
 
     //private static final int WORKER_SIZE_DIVIDER = 16; //count / WORKER_SIZE_DIVIDER = worker count
     private static final int WORKER_WORK_SIZE = 5000;
