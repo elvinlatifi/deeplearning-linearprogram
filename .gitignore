@@ -1,2 +1,6 @@
 test/
 python/*.h5
+
+# sublime project files
+python/python.sublime-project
+python/python.sublime-workspace
