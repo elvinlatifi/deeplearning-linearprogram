@@ -22,11 +22,23 @@ public class Randomizer {
         //generateDataGenerationStatistics();
         //generateDatasets(10000, output_path);
         //generateDatasets(10000, train_output_path);
+        var startTime1 = System.currentTimeMillis();
+        generateCSV(100000, 4);
+        var endTime1 = System.currentTimeMillis();
+
+        Runtime.getRuntime().gc();
+
+        System.out.println("randomizer took: " + (endTime1 - startTime1) + " ms");
+
         var startTime = System.currentTimeMillis();
-        generateCSV(100000, 2);
+
+        var tr = new ThreadedRandomizer();
+
+        tr.generate(100000, 4, dataset_path);
+
         var endTime = System.currentTimeMillis();
 
-        System.out.println("generateCSV took: " + (endTime - startTime) + " ms");
+        System.out.println("threadedrandomizer took: " + (endTime - startTime) + " ms");
     }
 
     public static void Test() {
@@ -315,7 +327,6 @@ public class Randomizer {
                     bofwriter.printRecord(0);
                     inconvertible++;
                 }
-
             }
             inputfw.close();
             boffw.close();

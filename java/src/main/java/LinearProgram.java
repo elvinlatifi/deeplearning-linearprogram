@@ -94,9 +94,11 @@ public class LinearProgram {
             //System.out.println("Objective value = " + objective.value());
             //System.out.println("x = " + mpVariables.get(0).solutionValue());
             //System.out.println("y = " + mpVariables.get(1).solutionValue());
+            solver.clear();
             return true;
         } else {
             //System.err.println("Did not find a solution");
+            solver.clear();
             return false;
         }
 
