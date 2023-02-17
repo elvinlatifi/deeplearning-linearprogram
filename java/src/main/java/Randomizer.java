@@ -22,23 +22,26 @@ public class Randomizer {
         //generateDataGenerationStatistics();
         //generateDatasets(10000, output_path);
         //generateDatasets(10000, train_output_path);
-        var startTime1 = System.currentTimeMillis();
-        generateCSV(100000, 4);
-        var endTime1 = System.currentTimeMillis();
 
-        Runtime.getRuntime().gc();
 
-        System.out.println("randomizer took: " + (endTime1 - startTime1) + " ms");
+        long startTime = System.currentTimeMillis();
 
-        var startTime = System.currentTimeMillis();
+        var generator = new AltGenerator(10);
 
-        var tr = new ThreadedRandomizer();
+        generator.generate(100000, 4, dataset_path);
 
-        tr.generate(100000, 4, dataset_path);
+        long endTime = System.currentTimeMillis();
 
-        var endTime = System.currentTimeMillis();
+        long startTime2 = System.currentTimeMillis();
 
-        System.out.println("threadedrandomizer took: " + (endTime - startTime) + " ms");
+        Generator generator2 = new Generator(10);
+
+        //generator2.generate(50000, 4, dataset_path);
+
+        long endTime2 = System.currentTimeMillis();
+
+        System.out.println("AltGenerator finished in: " + (endTime - startTime) + " ms");
+        System.out.println("Generator finished in: " + (endTime2 - startTime2) + " ms");
     }
 
     public static void Test() {

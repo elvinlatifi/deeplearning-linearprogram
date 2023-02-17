@@ -4,9 +4,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import com.google.ortools.linearsolver.MPConstraint;
+import com.google.ortools.linearsolver.MPObjective;
+import com.google.ortools.linearsolver.MPSolver;
+import com.google.ortools.linearsolver.MPVariable;
 
 public class AltGenerator {
-    private int convertible; 
+    private final double infinity = java.lang.Double.POSITIVE_INFINITY;
+    private int convertible;
     private int inconvertible;
 
     private static Random rand = new Random();
@@ -19,8 +24,9 @@ public class AltGenerator {
     public AltGenerator(int workerCount) {
         this.workerCount = workerCount;
     }
-    class Worker implements Runnable
-    {
+    class Worker implements Runnable {
+        MPSolver solver;
+
         private String[] outputArrayRef;
         private String[] bofArrayRef;
 
@@ -30,6 +36,12 @@ public class AltGenerator {
 
         private int count;
 
+        ArrayList<MPVariable> mpVariables = new ArrayList<>();
+        MPConstraint firstConstraint;
+        MPConstraint secondConstraint;
+        MPObjective objective;
+
+
         public Worker(String threadName, String[] outputArrayRef, String[] bofArrayRef, int nrOfVariables, int count) {
             System.out.println("Started " + threadName);
 
@@ -38,17 +50,42 @@ public class AltGenerator {
             this.bofArrayRef = bofArrayRef;
             this.nrOfVariables = nrOfVariables;
             this.count = count;
+            initializeSolver();
+            this.objective = solver.objective();
+            this.objective.setMaximization();
+            this.firstConstraint = solver.makeConstraint("c1");
+            this.secondConstraint = solver.makeConstraint("c2");
+        }
+
+        private void initializeSolver() {
+            this.solver = MPSolver.createSolver("GLOP");
+            String variablesString = "xyzwabcdefghijklmnopqrst";
+            for (int i = 0; i < nrOfVariables; i++) {
+                mpVariables.add(solver.makeNumVar(0.0, infinity, variablesString.charAt(i) + ""));
+            }
+        }
+
+        private boolean solve(LinearProgram lp) {
+            Constraint first = lp.getConstraints().get(0);
+            Constraint second = lp.getConstraints().get(1);
+            firstConstraint.setBounds(-infinity, first.getUb());
+            secondConstraint.setBounds(second.getLb(), infinity);
+            for (int i = 0; i < nrOfVariables; i++) {
+                firstConstraint.setCoefficient(mpVariables.get(i), first.getCoefficients().get(i));
+                secondConstraint.setCoefficient(mpVariables.get(i), second.getCoefficients().get(i));
+                objective.setCoefficient(mpVariables.get(i), lp.getObjective().getCoefficients().get(i));
+            }
+            final MPSolver.ResultStatus resultStatus = solver.solve();
+            return resultStatus == MPSolver.ResultStatus.FEASIBLE || resultStatus == MPSolver.ResultStatus.OPTIMAL;
         }
 
         public void run() {
-
 
             while(notFinished()) {
                 LinearProgram lp = generateLinearProgram(nrOfVariables);
                 LinearProgram result;
 
-
-                if (lp.solve()) {
+                if (solve(lp)) {
                     result = flipSigns(lp, true);
                 }
                 else {
@@ -108,10 +145,7 @@ public class AltGenerator {
             return ret;
         }
 
-
-
-        private void writeDataToArray(String[] input1, String[] input2, int curr_count)
-        {
+        private void writeDataToArray(String[] input1, String[] input2, int curr_count) {
             var str1 = getCsvRowFromStrArray(input1);
             var str2 = getCsvRowFromStrArray(input2);
 
@@ -119,8 +153,7 @@ public class AltGenerator {
                 outputArrayRef[curr_count-1] = str1;
                 bofArrayRef[curr_count-1] = str2;
             }
-            catch(Exception e)
-            {
+            catch(Exception e) {
                 System.err.println(e.getMessage());
             }
 
@@ -132,8 +165,7 @@ public class AltGenerator {
             for (int i = 0; i < input.length; i++) {
                 output += input[i];
 
-                if (i < input.length - 1)
-                {
+                if (i < input.length - 1) {
                     output += ", ";
                 }
             }
@@ -141,6 +173,42 @@ public class AltGenerator {
             output += "\n";
 
             return output;
+        }
+
+        private LinearProgram flipSigns(LinearProgram lp, boolean originallyFeasible) {
+            int variableNum = lp.getVariables().size();
+            ArrayList<Integer> indices = new ArrayList<>();
+
+            for (int i = 0; i<Math.pow(2, variableNum);i++) {
+                LinearProgram copy = new LinearProgram(lp);
+                String bin = Integer.toBinaryString(i);
+                while (bin.length() < variableNum) {
+                    bin = "0" + bin;
+                }
+                for (int j = 0; j<variableNum; j++) {
+                    if (bin.charAt(j) == '1') {
+                        indices.add(j);
+                    }
+                }
+                copy.flipSign(indices);
+                boolean feasible = solve(copy);
+                if (feasible && !originallyFeasible) {
+                    lp.setConvertible();
+                    lp.setBinaryOutputFeature(bin);
+                    return lp; // Originally not feasible and made feasible, CONVERTIBLE DATASET
+                }
+                else if (!feasible && originallyFeasible) {
+                    copy.setConvertible();
+                    copy.setBinaryOutputFeature(bin);
+                    return copy; // Originally feasible and made infeasible, CONVERTIBLE DATASET
+                }
+
+            }
+            if (!originallyFeasible) {
+                lp.setBinaryOutputFeature("0".repeat(variableNum));
+                return lp; // Originally infeasible and stayed infeasible after each sign flip, INCONVERTIBLE DATASET
+            }
+            return null; // Originally feasible and still feasible after each sign flip, USELESS
         }
     }
 
@@ -204,7 +272,6 @@ public class AltGenerator {
         }
 
         String variablesString = "xyzwabcdefghijklmnopqrst";
-        double infinity = java.lang.Double.POSITIVE_INFINITY;
         ArrayList<Double> obj_data = new ArrayList<Double>();
         ArrayList<Double> const_coef = new ArrayList<Double>();
         ArrayList<Double> const_coef2 = new ArrayList<Double>();
@@ -228,39 +295,4 @@ public class AltGenerator {
         return new LinearProgram(obj, c_list, variables);
     }
 
-    public LinearProgram flipSigns(LinearProgram lp, boolean originallyFeasible) {
-        int variableNum = lp.getVariables().size();
-        ArrayList<Integer> indices = new ArrayList<>();
-
-        for (int i = 0; i<Math.pow(2, variableNum);i++) {
-            LinearProgram copy = new LinearProgram(lp);
-            String bin = Integer.toBinaryString(i);
-            while (bin.length() < variableNum) {
-                bin = "0" + bin;
-            }
-            for (int j = 0; j<variableNum; j++) {
-                if (bin.charAt(j) == '1') {
-                    indices.add(j);
-                }
-            }
-            copy.flipSign(indices);
-            boolean feasible = copy.solve();
-            if (feasible && !originallyFeasible) {
-                lp.setConvertible();
-                lp.setBinaryOutputFeature(bin);
-                return lp; // Originally not feasible and made feasible, CONVERTIBLE DATASET
-            }
-            else if (!feasible && originallyFeasible) {
-                copy.setConvertible();
-                copy.setBinaryOutputFeature(bin);
-                return copy; // Originally feasible and made infeasible, CONVERTIBLE DATASET
-            }
-
-        }
-        if (!originallyFeasible) {
-            lp.setBinaryOutputFeature("0".repeat(variableNum));
-            return lp; // Originally infeasible and stayed infeasible after each sign flip, INCONVERTIBLE DATASET
-        }
-        return null; // Originally feasible and still feasible after each sign flip, USELESS
-    }
 }
