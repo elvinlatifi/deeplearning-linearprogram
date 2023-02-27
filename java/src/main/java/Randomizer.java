@@ -7,8 +7,8 @@ import org.apache.commons.csv.*;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Random;
 public class Randomizer {
     private static Random rand = new Random();
@@ -22,23 +22,52 @@ public class Randomizer {
         //generateDataGenerationStatistics();
         //generateDatasets(10000, output_path);
         //generateDatasets(10000, train_output_path);
-        var startTime1 = System.currentTimeMillis();
-        generateCSV(100000, 4);
-        var endTime1 = System.currentTimeMillis();
+        //var startTime1 = System.currentTimeMillis();
+        //generateCSV(100000, 4);
+        //var endTime1 = System.currentTimeMillis();
 
-        Runtime.getRuntime().gc();
 
-        System.out.println("randomizer took: " + (endTime1 - startTime1) + " ms");
+        if (args.length == 1)
+        {
+            var count = Integer.parseInt(args[0]);
 
-        var startTime = System.currentTimeMillis();
+            var startTime = System.currentTimeMillis();
 
-        var tr = new ThreadedRandomizer();
+            var gen = new Generator(count);
+            gen.generate(100000, 4, dataset_path);
+            var endTime = System.currentTimeMillis();
 
-        tr.generate(100000, 4, dataset_path);
+            System.out.println("Generator " + count + " took: " + (endTime - startTime) + " ms");
 
-        var endTime = System.currentTimeMillis();
+            var superString = "Generator " + count + " : " + (endTime - startTime) + "\n";
 
-        System.out.println("threadedrandomizer took: " + (endTime - startTime) + " ms");
+            try {
+                Files.write(Paths.get("benchmark.txt"), superString.getBytes(), StandardOpenOption.APPEND);
+            }catch (IOException e) {
+                //exception handling left as an exercise for the reader
+            }
+        }
+
+        //RandomizerWorkerCountBenchmark();
+    }
+
+    public static void RandomizerWorkerCountBenchmark()
+    {
+        var timeTracker = new ArrayList<>();
+
+        for (int i = 5; i < 50; i += 5) {
+            var startTime = System.currentTimeMillis();
+            var gen = new Generator(i);
+            gen.generate(100000, 4, dataset_path);
+            var endTime = System.currentTimeMillis();
+
+            System.out.println("Generator " + i + " took: " + (endTime - startTime) + " ms");
+            timeTracker.add(endTime - startTime);
+        }
+
+        for (int i = 0; i < timeTracker.size(); i++) {
+            System.out.println("Generator " + i + " took: " + timeTracker.get(i) + " ms");
+        }
     }
 
     public static void Test() {
