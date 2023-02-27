@@ -48,7 +48,17 @@ public class Randomizer {
         }
          */
 
-        RandomizerWorkerCountBenchmark();
+        var start = System.currentTimeMillis();
+
+        EqualDistGenerator asd = new EqualDistGenerator(10);
+        //asd.generate(1600000, 4, dataset_path);
+        asd.generate(200000, 4, dataset_path);
+
+        var end = System.currentTimeMillis();
+
+        System.out.println("Time: " + (end - start) + " ms");
+
+        //RandomizerWorkerCountBenchmark();
     }
 
     public static void RandomizerWorkerCountBenchmark()

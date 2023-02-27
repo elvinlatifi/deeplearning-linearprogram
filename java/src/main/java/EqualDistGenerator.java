@@ -60,7 +60,9 @@ public class EqualDistGenerator {
             this.objective.setMaximization();
             this.firstConstraint = solver.makeConstraint("c1");
             this.secondConstraint = solver.makeConstraint("c2");
-            this.quota = count / workerCount;
+            this.quota = count / (int)Math.pow(2, nrOfVariables);
+
+            System.out.println("Worker quota: " + quota);
         }
 
         private void initializeSolver() {
@@ -110,7 +112,7 @@ public class EqualDistGenerator {
                         totalLock.writeLock().lock();
                         linearPrograms.put(result.getBofAsStr(), linearPrograms.get(result.getBofAsStr())+1);
                         total++;
-                        System.out.println("Bof version count: " + linearPrograms.keySet().size());
+                        //System.out.println("Bof version count: " + linearPrograms.keySet().size());
                         writeDataToArray(result.getRelevantData(), result.getBinaryOutputFeature(), total);
                         totalLock.writeLock().unlock();
                         mapLock.writeLock().unlock();
@@ -125,12 +127,17 @@ public class EqualDistGenerator {
                     totalLock.writeLock().lock();
                     linearPrograms.put(result.getBofAsStr(), 1);
                     total++;
-                    System.out.println("Bof version count: " + linearPrograms.keySet().size());
+                    //System.out.println("Bof version count: " + linearPrograms.keySet().size());
                     writeDataToArray(result.getRelevantData(), result.getBinaryOutputFeature(), total);
                     totalLock.writeLock().unlock();
                     mapLock.writeLock().unlock();
                 }
             }
+
+            mapLock.readLock().lock();
+            System.out.println(linearPrograms);
+            System.out.println(linearPrograms.keySet().size());
+            mapLock.readLock().unlock();
         }
 
         private boolean notFinished() {
@@ -173,22 +180,41 @@ public class EqualDistGenerator {
             int variableNum = lp.getVariables().size();
             ArrayList<Integer> indices = new ArrayList<>();
 
-            for (int i = 0; i<Math.pow(2, variableNum);i++) {
+            ArrayList<String> binsFound = new ArrayList<>();
+
+            while (binsFound.size() < Math.pow(2, variableNum)) {
                 LinearProgram copy = new LinearProgram(lp);
+
+                int i = rand.nextInt((int)Math.pow(2, variableNum));
+
                 String bin = Integer.toBinaryString(i);
                 while (bin.length() < variableNum) {
                     bin = "0" + bin;
                 }
+
+                binsFound.add(bin);
+
+                mapLock.readLock().lock();
+
+                if (linearPrograms.get(bin) != null && linearPrograms.get(bin) == quota) {
+                    mapLock.readLock().unlock();
+                    continue;
+                }
+                mapLock.readLock().unlock();
+
                 for (int j = 0; j<variableNum; j++) {
                     if (bin.charAt(j) == '1') {
                         indices.add(j);
                     }
                 }
+
                 copy.flipSign(indices);
                 boolean feasible = solve(copy);
                 if (feasible && !originallyFeasible) {
                     lp.setConvertible();
                     lp.setBinaryOutputFeature(bin);
+                    //System.out.println(lp);
+                    //System.out.println(copy);
                     return lp; // Originally not feasible and made feasible, CONVERTIBLE DATASET
                 }
                 else if (!feasible && originallyFeasible) {
@@ -196,7 +222,6 @@ public class EqualDistGenerator {
                     copy.setBinaryOutputFeature(bin);
                     return copy; // Originally feasible and made infeasible, CONVERTIBLE DATASET
                 }
-
             }
             if (!originallyFeasible) {
                 lp.setBinaryOutputFeature("0".repeat(variableNum));
@@ -272,16 +297,16 @@ public class EqualDistGenerator {
         ArrayList<Variable> variables = new ArrayList<Variable>();
 
         for (int i = 0; i < nrOfVariables; i++) {
-            obj_data.add((double) rand.nextInt(-100, 100));
-            const_coef.add((double) rand.nextInt(-100, 100));
-            const_coef2.add((double) rand.nextInt(-100, 100));
+            obj_data.add((double) rand.nextInt(-10, 10));
+            const_coef.add((double) rand.nextInt(-10, 10));
+            const_coef2.add((double) rand.nextInt(-10, 10));
             variables.add(new Variable(0.0, infinity, variablesString.charAt(i) + ""));
         }
 
         Objective obj = new Objective(obj_data);
 
-        Constraint c1 = new Constraint(-infinity, rand.nextInt(-1000, 1000), "c1", const_coef);
-        Constraint c2 = new Constraint(rand.nextInt(-1000, 1000), infinity, "c2", const_coef2);
+        Constraint c1 = new Constraint(-infinity, rand.nextInt(-100, 100), "c1", const_coef);
+        Constraint c2 = new Constraint(rand.nextInt(-100, 100), infinity, "c2", const_coef2);
 
         ArrayList<Constraint> c_list = new ArrayList<>();
         c_list.add(c1);
