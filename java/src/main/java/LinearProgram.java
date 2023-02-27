@@ -12,7 +12,7 @@ public class LinearProgram {
     private ArrayList<Constraint> constraints;
     private ArrayList<Variable> variables;
 
-    String[] binaryOutputFeature;
+    private String[] binaryOutputFeature;
 
     LinearProgram(Objective objective, ArrayList<Constraint> constraints, ArrayList<Variable> variables) {
         this.objective = objective;
@@ -229,6 +229,14 @@ public class LinearProgram {
 
     public String[] getBinaryOutputFeature() {
         return binaryOutputFeature;
+    }
+
+    public String getBofAsStr() {
+        String result = "";
+        for (String s : binaryOutputFeature) {
+            result += s;
+        }
+        return result;
     }
 
     @Override
