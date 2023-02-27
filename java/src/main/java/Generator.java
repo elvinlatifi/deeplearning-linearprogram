@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Random;
 
+/*
+
 public class Generator {
     int convertible;
     int inconvertible;
@@ -249,4 +251,4 @@ public class Generator {
         }
         return null; // Originally feasible and still feasible after each sign flip, USELESS
     }
-}
+}*/
