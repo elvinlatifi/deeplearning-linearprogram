@@ -1,18 +1,10 @@
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.ortools.Loader;
-import org.apache.commons.io.FileUtils;
 
-import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Random;
 public class Randomizer {
     private static Random rand = new Random();
     private static final String dataset_path = "..\\dataset\\";
-    double infinity = java.lang.Double.POSITIVE_INFINITY;
     public static void main(String[] args)
     {
         Loader.loadNativeLibraries();
@@ -48,17 +40,42 @@ public class Randomizer {
         }
          */
 
+        switch (args.length)
+        {
+            case 1:
+                if (args[0].equals("DEBUG"))
+                {
+                    GenerateDataset(200000, 4, 20, dataset_path);
+                }
+                break;
+            case 4:
+                int count = Integer.parseInt(args[0]);
+                int var_count = Integer.parseInt(args[1]);
+                int worker_count = Integer.parseInt(args[2]);
+                String path = args[3];
+                GenerateDataset(count, var_count, worker_count, path);
+                break;
+            default:
+                System.err.println("Usage: <count> <var_count> <worker_count> <path_to_dataset_dir>");
+                break;
+        }
+
+
+        //RandomizerWorkerCountBenchmark();
+    }
+
+    public static void GenerateDataset(int count, int nrOfVariables, int workerCount, String path)
+    {
+        System.out.println("Generating dataset with count: " + count + " varCount: " + nrOfVariables + " threads: " + workerCount);
+
         var start = System.currentTimeMillis();
 
-        EqualDistGenerator asd = new EqualDistGenerator(10);
-        //asd.generate(1600000, 4, dataset_path);
-        asd.generate(200000, 4, dataset_path);
+        EqualDistGenerator gen = new EqualDistGenerator(workerCount);
+        gen.generate(count, nrOfVariables, path);
 
         var end = System.currentTimeMillis();
 
         System.out.println("Time: " + (end - start) + " ms");
-
-        //RandomizerWorkerCountBenchmark();
     }
 
     public static void RandomizerWorkerCountBenchmark()
