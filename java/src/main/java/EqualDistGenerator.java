@@ -337,16 +337,16 @@ public class EqualDistGenerator {
         ArrayList<Variable> variables = new ArrayList<Variable>();
 
         for (int i = 0; i < nrOfVariables; i++) {
-            obj_data.add((double) rand.nextInt(-10, 10));
-            const_coef.add((double) rand.nextInt(-10, 10));
-            const_coef2.add((double) rand.nextInt(-10, 10));
+            obj_data.add((double) rand.nextInt(-1, 2));
+            const_coef.add((double) rand.nextInt(-1, 2));
+            const_coef2.add((double) rand.nextInt(-1, 2));
             variables.add(new Variable(0.0, infinity, variablesString.charAt(i) + ""));
         }
 
         Objective obj = new Objective(obj_data);
 
-        Constraint c1 = new Constraint(-infinity, rand.nextInt(-100, 100), "c1", const_coef);
-        Constraint c2 = new Constraint(rand.nextInt(-100, 100), infinity, "c2", const_coef2);
+        Constraint c1 = new Constraint(-infinity, rand.nextInt(-10, 10), "c1", const_coef);
+        Constraint c2 = new Constraint(rand.nextInt(-10, 10), infinity, "c2", const_coef2);
 
         ArrayList<Constraint> c_list = new ArrayList<>();
         c_list.add(c1);
