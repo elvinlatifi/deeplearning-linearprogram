@@ -1,10 +1,7 @@
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPObjective;
@@ -12,6 +9,7 @@ import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPVariable;
 
 public class EqualDistGenerator {
+    HashMap<Integer, String> map = new HashMap<>();
     private final double infinity = java.lang.Double.POSITIVE_INFINITY;
 
     private static Random rand = new Random();
@@ -27,6 +25,22 @@ public class EqualDistGenerator {
 
     public EqualDistGenerator(int workerCount) {
         this.workerCount = workerCount;
+        map.put(1, "One");
+        map.put(2, "Two");
+        map.put(3, "Three");
+        map.put(4, "Four");
+        map.put(5, "Five");
+        map.put(6, "Six");
+        map.put(7, "Seven");
+        map.put(8, "Eight");
+        map.put(9, "Nine");
+        map.put(10, "Ten");
+        map.put(11, "Eleven");
+        map.put(12, "Twelve");
+        map.put(13, "Thirteen");
+        map.put(14, "Fourteen");
+        map.put(15, "Fifteen");
+        map.put(16, "Sixteen");
     }
 
     class Worker implements Runnable {
@@ -288,7 +302,7 @@ public class EqualDistGenerator {
             for (int i = 0; i < outputStrArr.length; i++) {
                 if (outputStrArr[i] == null)
                     break;
-                ow.write(outputStrArr[i] + "\n");
+                ow.write(outputStrArr[i] + "," + map.get(classes.get(bofStrArr[i])) + "\n");
             }
             ow.flush();
             ow.close();
