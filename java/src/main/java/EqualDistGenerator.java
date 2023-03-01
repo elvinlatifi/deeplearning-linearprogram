@@ -107,6 +107,7 @@ public class EqualDistGenerator {
 
                 mapLock.readLock().lock();
                 if (linearPrograms.containsKey(result.getBofAsStr())) {
+
                     if (linearPrograms.get(result.getBofAsStr()) < quota) {
                         mapLock.readLock().unlock();
                         mapLock.writeLock().lock();
@@ -181,6 +182,10 @@ public class EqualDistGenerator {
 
             HashSet<String> binsFound = new HashSet<>();
 
+            LinearProgram ret = null;
+
+            boolean moreThanOne = false;
+
             while (binsFound.size() < Math.pow(2, variableNum)) {
                 LinearProgram copy = new LinearProgram(lp);
 
@@ -197,7 +202,7 @@ public class EqualDistGenerator {
 
                 mapLock.readLock().lock();
 
-                if (linearPrograms.get(bin) != null && linearPrograms.get(bin) == quota) {
+                if (linearPrograms.get(bin) != null && linearPrograms.get(bin) >= quota) {
                     mapLock.readLock().unlock();
                     continue;
                 }
@@ -212,16 +217,27 @@ public class EqualDistGenerator {
                 copy.flipSign(indices);
                 boolean feasible = solve(copy);
                 if (feasible && !originallyFeasible) {
+                    if (moreThanOne) {
+                        return null;
+                    }
                     lp.setConvertible();
                     lp.setBinaryOutputFeature(bin);
-                    return lp; // Originally not feasible and made feasible, CONVERTIBLE DATASET
+                    ret = lp;
+                    moreThanOne = true;
                 }
                 else if (!feasible && originallyFeasible) {
+                    if (moreThanOne) {
+                        return null;
+                    }
                     copy.setConvertible();
                     copy.setBinaryOutputFeature(bin);
-                    return copy; // Originally feasible and made infeasible, CONVERTIBLE DATASET
+                    ret = copy;
+                    moreThanOne = true;
                 }
             }
+
+            if (ret != null)
+                return ret;
             if (!originallyFeasible) {
                 lp.setBinaryOutputFeature("0".repeat(variableNum));
                 return lp; // Originally infeasible and stayed infeasible after each sign flip, INCONVERTIBLE DATASET
