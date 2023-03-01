@@ -3,6 +3,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Random;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import com.google.ortools.linearsolver.MPConstraint;
@@ -112,7 +113,6 @@ public class EqualDistGenerator {
                         totalLock.writeLock().lock();
                         linearPrograms.put(result.getBofAsStr(), linearPrograms.get(result.getBofAsStr())+1);
                         total++;
-                        //System.out.println("Bof version count: " + linearPrograms.keySet().size());
                         writeDataToArray(result.getRelevantData(), result.getBinaryOutputFeature(), total);
                         totalLock.writeLock().unlock();
                         mapLock.writeLock().unlock();
@@ -127,7 +127,6 @@ public class EqualDistGenerator {
                     totalLock.writeLock().lock();
                     linearPrograms.put(result.getBofAsStr(), 1);
                     total++;
-                    //System.out.println("Bof version count: " + linearPrograms.keySet().size());
                     writeDataToArray(result.getRelevantData(), result.getBinaryOutputFeature(), total);
                     totalLock.writeLock().unlock();
                     mapLock.writeLock().unlock();
@@ -180,7 +179,7 @@ public class EqualDistGenerator {
             int variableNum = lp.getVariables().size();
             ArrayList<Integer> indices = new ArrayList<>();
 
-            ArrayList<String> binsFound = new ArrayList<>();
+            HashSet<String> binsFound = new HashSet<>();
 
             while (binsFound.size() < Math.pow(2, variableNum)) {
                 LinearProgram copy = new LinearProgram(lp);
@@ -192,7 +191,9 @@ public class EqualDistGenerator {
                     bin = "0" + bin;
                 }
 
-                binsFound.add(bin);
+                if (!binsFound.add(bin)) {
+                    continue;
+                }
 
                 mapLock.readLock().lock();
 
@@ -213,8 +214,6 @@ public class EqualDistGenerator {
                 if (feasible && !originallyFeasible) {
                     lp.setConvertible();
                     lp.setBinaryOutputFeature(bin);
-                    //System.out.println(lp);
-                    //System.out.println(copy);
                     return lp; // Originally not feasible and made feasible, CONVERTIBLE DATASET
                 }
                 else if (!feasible && originallyFeasible) {
