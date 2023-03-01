@@ -3,6 +3,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Random;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import com.google.ortools.linearsolver.MPConstraint;
@@ -106,13 +107,13 @@ public class EqualDistGenerator {
 
                 mapLock.readLock().lock();
                 if (linearPrograms.containsKey(result.getBofAsStr())) {
+
                     if (linearPrograms.get(result.getBofAsStr()) < quota) {
                         mapLock.readLock().unlock();
                         mapLock.writeLock().lock();
                         totalLock.writeLock().lock();
                         linearPrograms.put(result.getBofAsStr(), linearPrograms.get(result.getBofAsStr())+1);
                         total++;
-                        //System.out.println("Bof version count: " + linearPrograms.keySet().size());
                         writeDataToArray(result.getRelevantData(), result.getBinaryOutputFeature(), total);
                         totalLock.writeLock().unlock();
                         mapLock.writeLock().unlock();
@@ -127,7 +128,6 @@ public class EqualDistGenerator {
                     totalLock.writeLock().lock();
                     linearPrograms.put(result.getBofAsStr(), 1);
                     total++;
-                    //System.out.println("Bof version count: " + linearPrograms.keySet().size());
                     writeDataToArray(result.getRelevantData(), result.getBinaryOutputFeature(), total);
                     totalLock.writeLock().unlock();
                     mapLock.writeLock().unlock();
@@ -180,7 +180,11 @@ public class EqualDistGenerator {
             int variableNum = lp.getVariables().size();
             ArrayList<Integer> indices = new ArrayList<>();
 
-            ArrayList<String> binsFound = new ArrayList<>();
+            HashSet<String> binsFound = new HashSet<>();
+
+            LinearProgram ret = null;
+
+            boolean moreThanOne = false;
 
             while (binsFound.size() < Math.pow(2, variableNum)) {
                 LinearProgram copy = new LinearProgram(lp);
@@ -192,11 +196,13 @@ public class EqualDistGenerator {
                     bin = "0" + bin;
                 }
 
-                binsFound.add(bin);
+                if (!binsFound.add(bin)) {
+                    continue;
+                }
 
                 mapLock.readLock().lock();
 
-                if (linearPrograms.get(bin) != null && linearPrograms.get(bin) == quota) {
+                if (linearPrograms.get(bin) != null && linearPrograms.get(bin) >= quota) {
                     mapLock.readLock().unlock();
                     continue;
                 }
@@ -211,18 +217,27 @@ public class EqualDistGenerator {
                 copy.flipSign(indices);
                 boolean feasible = solve(copy);
                 if (feasible && !originallyFeasible) {
+                    if (moreThanOne) {
+                        return null;
+                    }
                     lp.setConvertible();
                     lp.setBinaryOutputFeature(bin);
-                    //System.out.println(lp);
-                    //System.out.println(copy);
-                    return lp; // Originally not feasible and made feasible, CONVERTIBLE DATASET
+                    ret = lp;
+                    moreThanOne = true;
                 }
                 else if (!feasible && originallyFeasible) {
+                    if (moreThanOne) {
+                        return null;
+                    }
                     copy.setConvertible();
                     copy.setBinaryOutputFeature(bin);
-                    return copy; // Originally feasible and made infeasible, CONVERTIBLE DATASET
+                    ret = copy;
+                    moreThanOne = true;
                 }
             }
+
+            if (ret != null)
+                return ret;
             if (!originallyFeasible) {
                 lp.setBinaryOutputFeature("0".repeat(variableNum));
                 return lp; // Originally infeasible and stayed infeasible after each sign flip, INCONVERTIBLE DATASET
