@@ -23,6 +23,7 @@ public class EqualDistGenerator {
     private int total;
 
     HashMap<String, Integer> linearPrograms = new HashMap<>();
+    HashMap<String, Integer> classes = new HashMap<>();
 
     public EqualDistGenerator(int workerCount) {
         this.workerCount = workerCount;
@@ -62,6 +63,7 @@ public class EqualDistGenerator {
             this.firstConstraint = solver.makeConstraint("c1");
             this.secondConstraint = solver.makeConstraint("c2");
             this.quota = count / (int)Math.pow(2, nrOfVariables);
+            initializeClasses();
 
             System.out.println("Worker quota: " + quota);
         }
@@ -71,6 +73,16 @@ public class EqualDistGenerator {
             String variablesString = "xyzwabcdefghijklmnopqrst";
             for (int i = 0; i < nrOfVariables; i++) {
                 mpVariables.add(solver.makeNumVar(0.0, infinity, variablesString.charAt(i) + ""));
+            }
+        }
+
+        private void initializeClasses() {
+            for (int i=0; i<Math.pow(2, nrOfVariables);i++) {
+                String bin = Integer.toBinaryString(i);
+                while (bin.length() < nrOfVariables) {
+                    bin = "0" + bin;
+                }
+                classes.put(bin, i+1);
             }
         }
 
@@ -148,8 +160,8 @@ public class EqualDistGenerator {
         }
 
         private void writeDataToArray(String[] input1, String[] input2, int curr_count) {
-            var str1 = getCsvRowFromStrArray(input1);
-            var str2 = getCsvRowFromStrArray(input2);
+            var str1 = getCsvRowFromStrArray(input1, false);
+            var str2 = getCsvRowFromStrArray(input2, true);
 
             try {
                 outputArrayRef[curr_count-1] = str1;
@@ -160,18 +172,17 @@ public class EqualDistGenerator {
             }
         }
 
-        private String getCsvRowFromStrArray(String[] input) {
+        private String getCsvRowFromStrArray(String[] input, boolean bof) {
             String output = "";
 
             for (int i = 0; i < input.length; i++) {
                 output += input[i];
-
-                if (i < input.length - 1) {
-                    output += ", ";
+                if (!bof) {
+                    if (i < input.length-1) {
+                        output += ", ";
+                    }
                 }
             }
-
-            output += "\n";
 
             return output;
         }
@@ -277,7 +288,7 @@ public class EqualDistGenerator {
             for (int i = 0; i < outputStrArr.length; i++) {
                 if (outputStrArr[i] == null)
                     break;
-                ow.write(outputStrArr[i]);
+                ow.write(outputStrArr[i] + "\n");
             }
             ow.flush();
             ow.close();
@@ -287,7 +298,7 @@ public class EqualDistGenerator {
             for (int i = 0; i < bofStrArr.length; i++) {
                 if (bofStrArr[i] == null)
                     break;
-                ow2.write(bofStrArr[i]);
+                ow2.write(classes.get(bofStrArr[i]) + "\n");
             }
             ow2.flush();
             ow2.close();
