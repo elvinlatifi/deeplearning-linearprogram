@@ -172,9 +172,7 @@ public class LinearProgram {
     public String[] getRelevantData() {
         double nrOfVariables = variables.size();
         ArrayList<Double> data = new ArrayList<>();
-
-        // Add number of variables
-        data.add(nrOfVariables);
+        
 
         // Get the coefficients for the objective
         for (int i=0;i<nrOfVariables;i++) {
