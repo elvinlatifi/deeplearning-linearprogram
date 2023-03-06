@@ -104,45 +104,45 @@ public class NewGenerator {
                         boolean result = flipSigns(lp);
                         if (result) {
                             if (convertible >= count / 2) continue;
+                            inconvLock.writeLock().lock();
                             convLock.writeLock().lock();
                             convertible++;
+                            writeDataToArray(lp.getRelevantData(), result ? 1:0);
                             convLock.writeLock().unlock();
+                            inconvLock.writeLock().unlock();
                         }
                         else {
                             if (inconvertible >= count / 2) continue;
                             inconvLock.writeLock().lock();
+                            convLock.writeLock().lock();
                             inconvertible++;
+                            writeDataToArray(lp.getRelevantData(), result ? 1:0);
+                            convLock.writeLock().unlock();
                             inconvLock.writeLock().unlock();
                         }
-                        writeDataToArray(lp.getRelevantData(), result ? 1:0);
                     }
                 }
             }
         }
 
         private boolean notFinished() {
-            convLock.readLock().lock();
             inconvLock.readLock().lock();
+            convLock.readLock().lock();
 
             var actual_count = count / 2;
-            //System.out.println("Inconv: " + inconvertible + " Conv: " + convertible);
+            System.out.println("Inconv: " + inconvertible + " Conv: " + convertible);
             boolean ret = convertible < actual_count || inconvertible < actual_count;
-            inconvLock.readLock().unlock();
+
             convLock.readLock().unlock();
+            inconvLock.readLock().unlock();
             return ret;
         }
 
         private void writeDataToArray(String[] input1, int input2) {
             var str1 = getCsvRowFromStrArray(input1);
-            var str2 = input2 + "\n";
-
-            convLock.readLock().lock();
-            inconvLock.readLock().lock();
+            var str2 = String.valueOf(input2);
 
             var curr_count = convertible + inconvertible;
-
-            convLock.readLock().unlock();
-            inconvLock.readLock().unlock();
 
             try {
                 outputArrayRef[curr_count-1] = str1;
@@ -227,7 +227,7 @@ public class NewGenerator {
             for (int i = 0; i < bofStrArr.length; i++) {
                 if (bofStrArr[i] == null)
                     break;
-                ow2.write(classes.get(bofStrArr[i]) + "\n");
+                ow2.write(bofStrArr[i] + "\n");
             }
             ow2.flush();
             ow2.close();
