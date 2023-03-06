@@ -3,10 +3,9 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import tensorflow as tf
 import numpy as np
 from keras.utils import np_utils
-import random
 from sklearn.model_selection import train_test_split
 
-num_var = 4
+num_var = 3
 
 # Load the input data and binary output features from the csv files
 #x = np.genfromtxt('../dataset/var' + str(num_var) + '/output.csv', delimiter=',')
@@ -15,7 +14,7 @@ num_var = 4
 x = np.genfromtxt('../dataset/random.output.csv', delimiter=',')
 y = np.genfromtxt('../dataset/random.bof.csv', delimiter=',')
 
-#dummy_y = np_utils.to_categorical(y)
+y = np_utils.to_categorical(y)  # One-hot encoding
 
 # Split the data into training and validation sets
 x_train, x_val, y_train, y_val = train_test_split(x, y, test_size=0.2, random_state=1)
@@ -26,11 +25,12 @@ if y_train.ndim == 1:
 else:
     outputshape = y_train.shape[1]
 
+inputshape = x_train.shape[1]
+
 model = tf.keras.models.Sequential([
-    tf.keras.layers.Dense(units=512, activation='relu', input_shape=(x_train.shape[1],)),
-    tf.keras.layers.Dense(units=64, activation='relu'),
-    tf.keras.layers.Dense(units=32, activation='relu'),
-    tf.keras.layers.Dense(units=17, activation='softmax'),
+    tf.keras.layers.Dense(units=inputshape, activation='relu', input_shape=(inputshape,)),
+    tf.keras.layers.Dense(units=13, activation='relu'),
+    tf.keras.layers.Dense(units=outputshape, activation='softmax'),
 ])
 
 optimizer = tf.keras.optimizers.experimental.RMSprop(
@@ -51,7 +51,7 @@ optimizer = tf.keras.optimizers.experimental.RMSprop(
 )
 
 # Compile the model
-model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
 # Train the model
 model.fit(x_train, y_train, epochs=10, batch_size=100)
