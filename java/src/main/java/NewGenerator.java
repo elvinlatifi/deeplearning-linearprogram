@@ -19,8 +19,6 @@ public class NewGenerator {
     private int inconvertible;
     private final ReentrantReadWriteLock convLock = new ReentrantReadWriteLock();
     private final ReentrantReadWriteLock inconvLock = new ReentrantReadWriteLock();
-
-    HashMap<String, Integer> classes = new HashMap<>();
     private final String path;
     private final int nrOfVariables;
     private final int workerCount;
@@ -30,17 +28,6 @@ public class NewGenerator {
         this.workerCount = workerCount;
         this.nrOfVariables = nrOfVariables;
         this.path = path +  "var" + nrOfVariables + "\\";
-        initializeClasses();
-    }
-
-    private void initializeClasses() {
-        for (int i=0; i<Math.pow(2, nrOfVariables);i++) {
-            String bin = Integer.toBinaryString(i);
-            while (bin.length() < nrOfVariables) {
-                bin = "0" + bin;
-            }
-            classes.put(bin, i);
-        }
     }
 
     class Worker implements Runnable {
