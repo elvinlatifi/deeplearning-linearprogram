@@ -22,5 +22,11 @@ public class Objective {
             coefficients.set(i, coefficients.get(i) *-1);
         }
     }
+    
+    public void flipSign(int[] indices) {
+        for (Integer i: indices) {
+            coefficients.set(i, coefficients.get(i) *-1);
+        }
+    }
 }
 

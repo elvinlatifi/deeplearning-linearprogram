@@ -107,6 +107,10 @@ public class LinearProgram {
     public void flipSign(ArrayList<Integer> indices) {
         objective.flipSign(indices);
     }
+    
+    public void flipSign(int[] indices) {
+        objective.flipSign(indices);
+    }
 
     public void setConvertible() {
         convertible = true;
@@ -172,7 +176,6 @@ public class LinearProgram {
     public String[] getRelevantData() {
         double nrOfVariables = variables.size();
         ArrayList<Double> data = new ArrayList<>();
-        
 
         // Get the coefficients for the objective
         for (int i=0;i<nrOfVariables;i++) {
