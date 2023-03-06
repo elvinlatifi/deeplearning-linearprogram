@@ -4,7 +4,6 @@ target/
 *.iml
 *.iws
 log/
-dataset/
-dataset_train/
 bof.csv
 input.csv
+META-INF/
