@@ -45,7 +45,7 @@ public class Randomizer {
             case 1:
                 if (args[0].equals("DEBUG"))
                 {
-                    GenerateDataset(200000, 4, 20, dataset_path);
+                    GenerateDataset(500, 20, 20, dataset_path);
                 }
                 break;
             case 4:
@@ -70,8 +70,8 @@ public class Randomizer {
 
         var start = System.currentTimeMillis();
 
-        EqualDistGenerator gen = new EqualDistGenerator(workerCount);
-        gen.generate(count, nrOfVariables, path);
+        var gen = new Generator(workerCount, nrOfVariables, path);
+        gen.generate(count);
 
         var end = System.currentTimeMillis();
 

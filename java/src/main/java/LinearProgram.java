@@ -81,6 +81,7 @@ public class LinearProgram {
         return solver;
     }
 
+    /*
     protected boolean solve() {
         MPSolver solver = generateSolver();
         //System.out.println(solver.exportModelAsLpFormat());
@@ -103,6 +104,7 @@ public class LinearProgram {
         }
 
     }
+    */
 
     public void flipSign(ArrayList<Integer> indices) {
         objective.flipSign(indices);
@@ -207,7 +209,6 @@ public class LinearProgram {
         }
         return arr;
     }
-
 
     public void setBinaryOutputFeatureWithPadding(String bof) {
         while (bof.length() < 4) {

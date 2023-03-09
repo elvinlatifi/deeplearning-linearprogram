@@ -1,152 +1,279 @@
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Random;
-
-/*
+import java.util.*;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import com.google.ortools.linearsolver.MPConstraint;
+import com.google.ortools.linearsolver.MPObjective;
+import com.google.ortools.linearsolver.MPSolver;
+import com.google.ortools.linearsolver.MPVariable;
 
 public class Generator {
-    int convertible;
-    int inconvertible;
     private static Random rand = new Random();
-    private static final String dataset_path = "..\\dataset\\";
+    private final double infinity = java.lang.Double.POSITIVE_INFINITY;
+    private int positive;
+    private int negative;
+    private final ReentrantReadWriteLock positiveLock = new ReentrantReadWriteLock();
+    private final ReentrantReadWriteLock negativeLock = new ReentrantReadWriteLock();
+    private final String path;
+    private final int nrOfVariables;
+    private final int workerCount;
 
-    //private static final int WORKER_SIZE_DIVIDER = 16; //count / WORKER_SIZE_DIVIDER = worker count
-    private int workerCount;
-    //private static final int WORKER_THRESHOLD = 1000;
 
-    public Generator(int workerCount) {
+    public Generator(int workerCount, int nrOfVariables, String path) {
         this.workerCount = workerCount;
+        this.nrOfVariables = nrOfVariables;
+        this.path = path +  "var" + nrOfVariables + "\\";
     }
-    class Worker implements Runnable
-    {
+
+    class Worker implements Runnable {
+        MPSolver solver;
+
         private String[] outputArrayRef;
         private String[] bofArrayRef;
-        private int workerOffset;
-        private int workerSize;
+
         private int nrOfVariables;
+        private int count;
 
-        private String tempName;
+        ArrayList<MPVariable> mpVariables = new ArrayList<>();
+        MPConstraint firstConstraint;
+        MPConstraint secondConstraint;
+        MPObjective objective;
 
-        public Worker(String threadName, String[] outputArrayRef, String[] bofArrayRef, int workerOffset, int workSize, int nrOfVariables)
-        {
-            System.out.println("Started " + threadName + " workerOffset: " + workerOffset + " worker_size = " + workSize);
+        int numberOfRounds = 0;
+        int numberOfSolvables = 0;
+        int numberOfUseful = 0;
+        private double objectiveConst;
 
-            this.tempName = threadName;
+        public Worker(String threadName, String[] outputArrayRef, String[] bofArrayRef, int nrOfVariables, int count) {
+            System.out.println("Started " + threadName);
+
             this.outputArrayRef = outputArrayRef;
             this.bofArrayRef = bofArrayRef;
-            this.workerSize = workSize;
-            this.workerOffset = workerOffset;
             this.nrOfVariables = nrOfVariables;
+            this.count = count;
+            initializeSolver();
+            this.objective = solver.objective();
+            this.objective.setMaximization();
+            this.firstConstraint = solver.makeConstraint("c1");
+            this.secondConstraint = solver.makeConstraint("c2");
         }
 
-        public void run()
-        {
-            int convertible = 0;
-            int inconvertible = 0;
+        private void initializeSolver() {
+            this.solver = MPSolver.createSolver("GLOP");
+            for (int i = 0; i < nrOfVariables; i++) {
+                mpVariables.add(solver.makeNumVar(0.0, infinity, "var" + i));
+            }
+        }
 
-            while(convertible != workerSize || inconvertible != workerSize) {
-                LinearProgram lp = generateLinearProgram(nrOfVariables);
-                LinearProgram result;
+        private boolean solve(LinearProgram lp) {
+            Constraint first = lp.getConstraints().get(0);
+            Constraint second = lp.getConstraints().get(1);
+            firstConstraint.setBounds(-infinity, first.getUb());
+            secondConstraint.setBounds(second.getLb(), infinity);
+            for (int i = 0; i < nrOfVariables; i++) {
+                firstConstraint.setCoefficient(mpVariables.get(i), first.getCoefficients().get(i));
+                secondConstraint.setCoefficient(mpVariables.get(i), second.getCoefficients().get(i));
+                objective.setCoefficient(mpVariables.get(i), lp.getObjective().getCoefficients().get(i));
+            }
+            final MPSolver.ResultStatus resultStatus = solver.solve();
+            return resultStatus == MPSolver.ResultStatus.FEASIBLE || resultStatus == MPSolver.ResultStatus.OPTIMAL;
+        }
 
-                if (lp.solve()) {
-                    result = flipSigns(lp, true);
-                }
-                else {
-                    result = flipSigns(lp, false);
-                }
-                if (result == null) {
-                    continue;
-                }
-                else if (result.isConvertible()) {
-                    if (convertible == workerSize) {
-                        continue;
+        public void run() {
+            var start = System.currentTimeMillis();
+            while(notFinishedNegative()) {
+                numberOfRounds++;
+                generateNegativeExamples();
+
+            }
+            var end = System.currentTimeMillis();
+            System.out.println("Negatives generation time: " + (end - start) + " ms");
+
+            var start1 = System.currentTimeMillis();
+            while (notFinishedPositive()) {
+                generatePositiveExamples();
+            }
+            var end1 = System.currentTimeMillis();
+            System.out.println("Positives generation time: " + (end1 - start1) + " ms");
+        }
+
+        int nmrFeasible1 = 0;
+        int nmrNotFeasible1 = 0;
+
+        private void generateNegativeExamples() {
+            LinearProgram lp = generateLinearProgram(nrOfVariables);
+            boolean feasible = solve(lp);
+            if (feasible) {
+                nmrFeasible1++;
+                numberOfSolvables++;
+                objectiveConst = solver.objective().value();
+                objectiveConst = flipSignsNegative(lp);
+            }
+            else {
+                nmrNotFeasible1++;
+                System.out.println("Negative feasible ratio: feasible: " + nmrFeasible1 + " notfeasible1: " + nmrNotFeasible1);
+                return;
+            }
+            negativeLock.writeLock().lock();
+            positiveLock.writeLock().lock();
+            negative++;
+            writeDataToArray(lp.getRelevantData(), 0);
+            positiveLock.writeLock().unlock();
+            negativeLock.writeLock().unlock();
+        }
+
+        int nmrFeasible = 0;
+        int nmrNotFeasible = 0;
+
+        private void generatePositiveExamples() {
+            LinearProgram lp = generateLinearProgram(nrOfVariables);
+            boolean feasible = solve(lp);
+            boolean valid = false;
+
+            if (feasible) {
+                nmrFeasible++;
+                objectiveConst = solver.objective().value();
+                valid = flipSignsPositive(lp);
+            }
+            else {
+                nmrNotFeasible++;
+                System.out.println("Positive feasible ratio: feasible: " + nmrFeasible + " notfeasible1: " + nmrNotFeasible);
+                return;
+            }
+            if (!valid) {
+                return;
+            }
+            negativeLock.writeLock().lock();
+            positiveLock.writeLock().lock();
+            positive++;
+            writeDataToArray(lp.getRelevantData(), 1);
+            positiveLock.writeLock().unlock();
+            negativeLock.writeLock().unlock();
+        }
+
+        private double flipSignsNegative(LinearProgram lp) {
+            int[] indices = new int[2];
+
+            for (int i = 0; i<nrOfVariables; i++) {
+                for (int j = i+1; j<nrOfVariables; j++) {
+                    LinearProgram copy = new LinearProgram(lp);
+                    indices[0] = i;
+                    indices[1] = j;
+                    copy.flipSign(indices);
+                    if (solve(copy)) {
+                        if (solver.objective().value() > objectiveConst) {
+                            objectiveConst = solver.objective().value();
+                        }
                     }
-
-                    writeDataToArray(result.getRelevantData(), result.getBinaryOutputFeature(), convertible + inconvertible);
-
-                    convertible++;
                 }
-                else {
-                    if (inconvertible == workerSize) {
-                        continue;
+            }
+            return objectiveConst + 1;
+        }
+
+        private boolean flipSignsPositive(LinearProgram lp) {
+            int[] indices = new int[2];
+
+            for (int i = 0; i<nrOfVariables; i++) {
+                for (int j = i+1; j<nrOfVariables; j++) {
+                    LinearProgram copy = new LinearProgram(lp);
+                    indices[0] = i;
+                    indices[1] = j;
+                    copy.flipSign(indices);
+                    if (solve(copy)) {
+                        if (solver.objective().value() > objectiveConst) {
+                            return true;
+                        }
+                        else if (solver.objective().value() < objectiveConst) {
+                            objectiveConst = solver.objective().value();
+                            return true;
+                        }
                     }
-
-                    writeDataToArray(result.getRelevantData(), result.getBinaryOutputFeature(), convertible + inconvertible);
-
-                    inconvertible++;
                 }
             }
 
-            System.out.println(tempName + ": Finished generating " + workerSize * 2 + " lps @ offset: " + workerOffset);
+            return false;
         }
 
-        private void writeDataToArray(String[] input1, String[] input2, int curr_count)
-        {
+        int debug_count = 0;
+
+        private boolean notFinishedNegative() {
+            if (debug_count > 100)
+            {
+                //System.out.println("Negative: " + negative);
+                debug_count = 0;
+            }
+            else {
+                debug_count++;
+            }
+
+            negativeLock.readLock().lock();
+            positiveLock.readLock().lock();
+
+            boolean ret = negative < (count / 2);
+
+            positiveLock.readLock().unlock();
+            negativeLock.readLock().unlock();
+            return ret;
+        }
+        private boolean notFinishedPositive() {
+            if (debug_count > 100)
+            {
+               System.out.println("Positives: " + positive);
+                debug_count = 0;
+            }
+            else {
+                debug_count++;
+            }
+
+            negativeLock.readLock().lock();
+            positiveLock.readLock().lock();
+
+            boolean ret = positive < (count / 2);
+
+            positiveLock.readLock().unlock();
+            negativeLock.readLock().unlock();
+            return ret;
+        }
+
+        private void writeDataToArray(String[] input1, int input2) {
             var str1 = getCsvRowFromStrArray(input1);
-            var str2 = getCsvRowFromStrArray(input2);
+            var str2 = String.valueOf(input2);
+
+            var curr_count = positive + negative;
 
             try {
-                outputArrayRef[workerOffset + curr_count] = str1;
-                bofArrayRef[workerOffset + curr_count] = str2;
+                outputArrayRef[curr_count-1] = str1;
+                bofArrayRef[curr_count-1] = str2;
             }
-            catch(Exception e)
-            {
-                System.err.println("LOL");
+            catch(Exception e) {
+                System.err.println(e.getMessage());
             }
-
         }
 
-        private String getCsvRowFromStrArray(String[] input)
-        {
+        private String getCsvRowFromStrArray(String[] input) {
             String output = "";
 
             for (int i = 0; i < input.length; i++) {
-                output += input[i];
-
-                if (i < input.length - 1)
-                {
-                    output += ", ";
-                }
+                output += input[i] + ", ";
             }
-
-            output += "\n";
+            output += objectiveConst;
 
             return output;
         }
     }
 
-    public void generate(int count, int nrOfVariables, String path) {
+    public void generate(int count) {
         var outputStrArr = new String[count * 2];
         var bofStrArr = new String[count * 2];
 
-        int workSize = count / workerCount;
-        if (count < workerCount) {
-            throw new IllegalArgumentException();
-        }
-
-
         var workerThreads = new ArrayList<Thread>();
 
-        int remainder = count;
-
         for (int i = 0; i < workerCount; i++) {
-            Thread workerThread;
-
-            if (remainder < workSize)
-            {
-                workerThread = new Thread(new Worker("t" + i, outputStrArr, bofStrArr, (workSize * i) * 2, remainder, nrOfVariables));
-            }
-            else {
-                workerThread = new Thread(new Worker("t" + i, outputStrArr, bofStrArr, (workSize * i) * 2, workSize, nrOfVariables));
-            }
+            var workerThread = new Thread(new Worker("t" + i, outputStrArr, bofStrArr, nrOfVariables, count));
             workerThreads.add(workerThread);
-
-            System.out.println("Created workerthread: " + "t" + i + " @ offset" + workSize * i + " remainder: " + remainder);
-
             workerThread.start();
-            remainder -= workSize;
         }
 
         try {
@@ -157,28 +284,30 @@ public class Generator {
             throw new RuntimeException(e);
         }
 
+        new File(path).mkdirs();
 
         try {
             BufferedWriter ow;
-            ow = new BufferedWriter(new FileWriter(path + "random.output.csv"));
+            ow = new BufferedWriter(new FileWriter(path + "output.csv"));
             for (int i = 0; i < outputStrArr.length; i++) {
-                if (outputStrArr[i] == null) break;
-                ow.write(outputStrArr[i]);
+                if (outputStrArr[i] == null)
+                    break;
+                ow.write(outputStrArr[i] + "\n");
             }
             ow.flush();
             ow.close();
 
             BufferedWriter ow2;
-            ow2 = new BufferedWriter(new FileWriter(path + "random.bof.csv"));
+            ow2 = new BufferedWriter(new FileWriter(path + "bof.csv"));
             for (int i = 0; i < bofStrArr.length; i++) {
-                if (bofStrArr[i] == null) break;
-                ow2.write(bofStrArr[i]);
+                if (bofStrArr[i] == null)
+                    break;
+                ow2.write(bofStrArr[i] + "\n");
             }
             ow2.flush();
             ow2.close();
         }
-        catch(IOException e)
-        {
+        catch(IOException e) {
             System.err.println("IO error: " + e.getMessage());
         }
 
@@ -186,29 +315,23 @@ public class Generator {
         System.out.println("Dataset generated using " + workerCount + " worker threads");
     }
 
-    public LinearProgram generateLinearProgram(int nrOfVariables) {
-        if (nrOfVariables > 24) {
-            throw new IllegalArgumentException("Number of variables can not be higher than 24!");
-        }
-
-        String variablesString = "xyzwabcdefghijklmnopqrst";
-        double infinity = java.lang.Double.POSITIVE_INFINITY;
-        ArrayList<Double> obj_data = new ArrayList<Double>();
-        ArrayList<Double> const_coef = new ArrayList<Double>();
-        ArrayList<Double> const_coef2 = new ArrayList<Double>();
-        ArrayList<Variable> variables = new ArrayList<Variable>();
+    private LinearProgram generateLinearProgram(int nrOfVariables) {
+        ArrayList<Double> obj_data = new ArrayList<>();
+        ArrayList<Double> const_coef = new ArrayList<>();
+        ArrayList<Double> const_coef2 = new ArrayList<>();
+        ArrayList<Variable> variables = new ArrayList<>();
 
         for (int i = 0; i < nrOfVariables; i++) {
-            obj_data.add((double) rand.nextInt(-10, 10));
-            const_coef.add((double) rand.nextInt(-10, 10));
-            const_coef2.add((double) rand.nextInt(-10, 10));
-            variables.add(new Variable(0.0, infinity, variablesString.charAt(i) + ""));
+            obj_data.add((double)rand.nextInt(-10, 10));
+            const_coef.add((double)rand.nextInt(-10, 10));
+            const_coef2.add((double)rand.nextInt(-10, 10));
+            variables.add(new Variable(0.0, infinity, "var" + i));
         }
 
         Objective obj = new Objective(obj_data);
 
-        Constraint c1 = new Constraint(-infinity, rand.nextInt(-100, 0), "c1", const_coef);
-        Constraint c2 = new Constraint(rand.nextInt(100), infinity, "c2", const_coef2);
+        Constraint c1 = new Constraint(-infinity, rand.nextInt(100), "c1", const_coef);
+        Constraint c2 = new Constraint(rand.nextInt(-100, 0), infinity, "c2", const_coef2);
 
         ArrayList<Constraint> c_list = new ArrayList<>();
         c_list.add(c1);
@@ -216,39 +339,7 @@ public class Generator {
         return new LinearProgram(obj, c_list, variables);
     }
 
-    public LinearProgram flipSigns(LinearProgram lp, boolean originallyFeasible) {
-        int variableNum = lp.getVariables().size();
-        ArrayList<Integer> indices = new ArrayList<>();
-
-        for (int i = 0; i<Math.pow(2, variableNum);i++) {
-            LinearProgram copy = new LinearProgram(lp);
-            String bin = Integer.toBinaryString(i);
-            while (bin.length() < variableNum) {
-                bin = "0" + bin;
-            }
-            for (int j = 0; j<variableNum; j++) {
-                if (bin.charAt(j) == '1') {
-                    indices.add(j);
-                }
-            }
-            copy.flipSign(indices);
-            boolean feasible = copy.solve();
-            if (feasible && !originallyFeasible) {
-                lp.setConvertible();
-                lp.setBinaryOutputFeature(bin);
-                return lp; // Originally not feasible and made feasible, CONVERTIBLE DATASET
-            }
-            else if (!feasible && originallyFeasible) {
-                copy.setConvertible();
-                copy.setBinaryOutputFeature(bin);
-                return copy; // Originally feasible and made infeasible, CONVERTIBLE DATASET
-            }
-
-        }
-        if (!originallyFeasible) {
-            lp.setBinaryOutputFeature("0".repeat(variableNum));
-            return lp; // Originally infeasible and stayed infeasible after each sign flip, INCONVERTIBLE DATASET
-        }
-        return null; // Originally feasible and still feasible after each sign flip, USELESS
+    private double getRandomSignIntegerOne() {
+        return Math.random() > 0.5 ? -1 : 1;
     }
-}*/
+}

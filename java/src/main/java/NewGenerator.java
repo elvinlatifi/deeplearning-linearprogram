@@ -45,6 +45,10 @@ public class NewGenerator {
         MPConstraint secondConstraint;
         MPObjective objective;
 
+        int numberOfRounds = 0;
+        int numberOfSolvables = 0;
+        int numberOfUseful = 0;
+
 
         public Worker(String threadName, String[] outputArrayRef, String[] bofArrayRef, int nrOfVariables, int count) {
             System.out.println("Started " + threadName);
@@ -62,9 +66,8 @@ public class NewGenerator {
 
         private void initializeSolver() {
             this.solver = MPSolver.createSolver("GLOP");
-            String variablesString = "xyzwabcdefghijklmnopqrst";
             for (int i = 0; i < nrOfVariables; i++) {
-                mpVariables.add(solver.makeNumVar(0.0, infinity, variablesString.charAt(i) + ""));
+                mpVariables.add(solver.makeNumVar(0.0, infinity, "var" + i));
             }
         }
 
@@ -83,41 +86,69 @@ public class NewGenerator {
             return resultStatus == MPSolver.ResultStatus.FEASIBLE || resultStatus == MPSolver.ResultStatus.OPTIMAL;
         }
 
+        private void compareSolvedValueToConst(LinearProgram lp)
+        {
+            numberOfSolvables++;
+
+            if (solver.objective().value() < OBJECTIVE_CONSTANT) {
+                numberOfUseful++;
+                boolean result = flipSigns(lp);
+
+                if (result) {
+                    if (convertible >= count / 2) return;
+                    inconvLock.writeLock().lock();
+                    convLock.writeLock().lock();
+                    convertible++;
+                    writeDataToArray(lp.getRelevantData(), result ? 1:0);
+                    convLock.writeLock().unlock();
+                    inconvLock.writeLock().unlock();
+                }
+                else {
+                    if (inconvertible >= count / 2) return;
+                    inconvLock.writeLock().lock();
+                    convLock.writeLock().lock();
+                    inconvertible++;
+                    writeDataToArray(lp.getRelevantData(), result ? 1:0);
+                    convLock.writeLock().unlock();
+                    inconvLock.writeLock().unlock();
+                }
+            }
+        }
+
         public void run() {
             while(notFinished()) {
+                numberOfRounds++;
+                //System.out.println("Number of rounds: " + numberOfRounds + " Number of useful: " + numberOfUseful + " numberOfSolvables: " + numberOfSolvables);
                 LinearProgram lp = generateLinearProgram(nrOfVariables);
                 if (solve(lp)) {
-                    if (solver.objective().value() < OBJECTIVE_CONSTANT) {
-                        boolean result = flipSigns(lp);
-                        if (result) {
-                            if (convertible >= count / 2) continue;
-                            inconvLock.writeLock().lock();
-                            convLock.writeLock().lock();
-                            convertible++;
-                            writeDataToArray(lp.getRelevantData(), result ? 1:0);
-                            convLock.writeLock().unlock();
-                            inconvLock.writeLock().unlock();
-                        }
-                        else {
-                            if (inconvertible >= count / 2) continue;
-                            inconvLock.writeLock().lock();
-                            convLock.writeLock().lock();
-                            inconvertible++;
-                            writeDataToArray(lp.getRelevantData(), result ? 1:0);
-                            convLock.writeLock().unlock();
-                            inconvLock.writeLock().unlock();
-                        }
+                    compareSolvedValueToConst(lp);
+                }
+                else {
+                    var res = flipSigns2(lp);
+                    if (res != null)
+                    {
+                        compareSolvedValueToConst(res);
                     }
                 }
             }
         }
 
+        int debug_count = 0;
+
         private boolean notFinished() {
+            if (debug_count > 100)
+            {
+                System.out.println("Inconv: " + inconvertible + " Conv: " + convertible);
+                debug_count = 0;
+            }
+            else {
+                debug_count++;
+            }
+
             inconvLock.readLock().lock();
             convLock.readLock().lock();
 
             var actual_count = count / 2;
-            System.out.println("Inconv: " + inconvertible + " Conv: " + convertible);
             boolean ret = convertible < actual_count || inconvertible < actual_count;
 
             convLock.readLock().unlock();
@@ -154,10 +185,10 @@ public class NewGenerator {
         private boolean flipSigns(LinearProgram lp) {
             int[] indices = new int[2];
 
-            LinearProgram copy = new LinearProgram(lp);
-
+            /*
             for (int i = 0; i<nrOfVariables; i++) {
                 for (int j = i+1; j<nrOfVariables; j++) {
+                    LinearProgram copy = new LinearProgram(lp);
                     indices[0] = i;
                     indices[1] = j;
                     copy.flipSign(indices);
@@ -167,18 +198,38 @@ public class NewGenerator {
                         }
                     }
                 }
-            }
+            }*/
             return false;
+        }
+
+        private LinearProgram flipSigns2(LinearProgram lp) {
+            int variableNum = lp.getVariables().size();
+            ArrayList<Integer> indices = new ArrayList<>();
+
+            for (int i = 0; i<Math.pow(2, variableNum);i++) {
+                LinearProgram copy = new LinearProgram(lp);
+                String bin = Integer.toBinaryString(i);
+                while (bin.length() < variableNum) {
+                    bin = "0" + bin;
+                }
+                for (int j = 0; j<variableNum; j++) {
+                    if (bin.charAt(j) == '1') {
+                        indices.add(j);
+                    }
+                }
+                copy.flipSign(indices);
+                boolean feasible = solve(copy);
+                if (feasible) {
+                    return lp; // Originally not feasible and made feasible, CONVERTIBLE DATASET
+                }
+            }
+            return null; // Originally feasible and still feasible after each sign flip, USELESS
         }
     }
 
     public void generate(int count) {
         var outputStrArr = new String[count * 2];
         var bofStrArr = new String[count * 2];
-
-        if (count < workerCount) {
-            throw new IllegalArgumentException();
-        }
 
         var workerThreads = new ArrayList<Thread>();
 
@@ -228,27 +279,22 @@ public class NewGenerator {
     }
 
     private LinearProgram generateLinearProgram(int nrOfVariables) {
-        if (nrOfVariables > 24) {
-            throw new IllegalArgumentException("Number of variables can not be higher than 24!");
-        }
-
-        String variablesString = "xyzwabcdefghijklmnopqrst";
-        ArrayList<Double> obj_data = new ArrayList<Double>();
-        ArrayList<Double> const_coef = new ArrayList<Double>();
-        ArrayList<Double> const_coef2 = new ArrayList<Double>();
-        ArrayList<Variable> variables = new ArrayList<Variable>();
+        ArrayList<Double> obj_data = new ArrayList<>();
+        ArrayList<Double> const_coef = new ArrayList<>();
+        ArrayList<Double> const_coef2 = new ArrayList<>();
+        ArrayList<Variable> variables = new ArrayList<>();
 
         for (int i = 0; i < nrOfVariables; i++) {
-            obj_data.add((double) rand.nextInt(-10, 10));
-            const_coef.add((double) rand.nextInt(-10, 10));
-            const_coef2.add((double) rand.nextInt(-10, 10));
-            variables.add(new Variable(0.0, infinity, variablesString.charAt(i) + ""));
+            obj_data.add(getRandomSignIntegerOne());
+            const_coef.add(getRandomSignIntegerOne());
+            const_coef2.add(getRandomSignIntegerOne());
+            variables.add(new Variable(0.0, 1.0, "var" + i));
         }
 
         Objective obj = new Objective(obj_data);
 
-        Constraint c1 = new Constraint(-infinity, rand.nextInt(100), "c1", const_coef);
-        Constraint c2 = new Constraint(rand.nextInt(-100, 0), infinity, "c2", const_coef2);
+        Constraint c1 = new Constraint(-infinity, rand.nextInt(1), "c1", const_coef);
+        Constraint c2 = new Constraint(rand.nextInt(-1, 0), infinity, "c2", const_coef2);
 
         ArrayList<Constraint> c_list = new ArrayList<>();
         c_list.add(c1);
@@ -257,7 +303,7 @@ public class NewGenerator {
     }
 
     private double getRandomSignIntegerOne() {
-        return Math.random() > 0.5 ? 1 : -1;
+        return Math.random() > 0.5 ? -1 : 1;
     }
 
 }
