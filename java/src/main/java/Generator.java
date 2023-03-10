@@ -63,15 +63,15 @@ public class Generator {
         private void initializeSolver() {
             this.solver = MPSolver.createSolver("GLOP");
             for (int i = 0; i < nrOfVariables; i++) {
-                mpVariables.add(solver.makeNumVar(0.0, infinity, "var" + i));
+                mpVariables.add(solver.makeNumVar(0.0, 1.0, "var" + i));
             }
         }
 
         private boolean solve(LinearProgram lp) {
             Constraint first = lp.getConstraints().get(0);
             Constraint second = lp.getConstraints().get(1);
-            firstConstraint.setBounds(-infinity, first.getUb());
-            secondConstraint.setBounds(second.getLb(), infinity);
+            firstConstraint.setBounds(first.getLb(), first.getUb());
+            secondConstraint.setBounds(second.getLb(), second.getUb());
             for (int i = 0; i < nrOfVariables; i++) {
                 firstConstraint.setCoefficient(mpVariables.get(i), first.getCoefficients().get(i));
                 secondConstraint.setCoefficient(mpVariables.get(i), second.getCoefficients().get(i));
@@ -247,7 +247,7 @@ public class Generator {
                 if (solve(lp)) feasible++;
                 else infeasible++;
             }
-            System.out.println("Feasible: " + feasible + "Infeasible " + infeasible);
+            System.out.println("Feasible: " + feasible + " Infeasible " + infeasible);
         }
 
         private void writeDataToArray(String[] input1, int input2) {
@@ -332,24 +332,25 @@ public class Generator {
         ArrayList<Double> obj_data = new ArrayList<>();
         ArrayList<Double> const_coef = new ArrayList<>();
         ArrayList<Double> const_coef2 = new ArrayList<>();
-        ArrayList<Variable> variables = new ArrayList<>();
 
         for (int i = 0; i < nrOfVariables; i++) {
             obj_data.add(getRandomSignIntegerOne());
             const_coef.add(getRandomSignIntegerOne());
             const_coef2.add(getRandomSignIntegerOne());
-            variables.add(new Variable(0.0, 1.0, "var" + i));
         }
 
         Objective obj = new Objective(obj_data);
 
-        Constraint c1 = new Constraint(-infinity, rand.nextInt(10), "c1", const_coef);
-        Constraint c2 = new Constraint(rand.nextInt(-10, 0), infinity, "c2", const_coef2);
+        //Constraint c1 = new Constraint(-infinity, rand.nextInt(-1, 2) * 0.5, "c1", const_coef);
+        //Constraint c2 = new Constraint(-infinity, rand.nextInt(-1, 2) * 0.5, "c2", const_coef2);
+        Constraint c1 = new Constraint(rand.nextInt(-1, 2) * 0.5, infinity, "c1", const_coef);
+        Constraint c2 = new Constraint(-infinity, rand.nextInt(-1, 2) * 0.5, "c2", const_coef2);
 
         ArrayList<Constraint> c_list = new ArrayList<>();
         c_list.add(c1);
         c_list.add(c2);
-        return new LinearProgram(obj, c_list, variables);
+
+        return new LinearProgram(obj, c_list, nrOfVariables);
     }
 
     private double getRandomSignIntegerOne() {

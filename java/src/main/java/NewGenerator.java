@@ -12,7 +12,7 @@ import com.google.ortools.linearsolver.MPVariable;
 public class NewGenerator {
     private static Random rand = new Random();
 
-    private static final int OBJECTIVE_CONSTANT = 50;
+    private static final int OBJECTIVE_CONSTANT = 5;
     private final double infinity = java.lang.Double.POSITIVE_INFINITY;
 
     private int convertible;
@@ -185,7 +185,6 @@ public class NewGenerator {
         private boolean flipSigns(LinearProgram lp) {
             int[] indices = new int[2];
 
-            /*
             for (int i = 0; i<nrOfVariables; i++) {
                 for (int j = i+1; j<nrOfVariables; j++) {
                     LinearProgram copy = new LinearProgram(lp);
@@ -198,21 +197,20 @@ public class NewGenerator {
                         }
                     }
                 }
-            }*/
+            }
             return false;
         }
 
         private LinearProgram flipSigns2(LinearProgram lp) {
-            int variableNum = lp.getVariables().size();
             ArrayList<Integer> indices = new ArrayList<>();
 
-            for (int i = 0; i<Math.pow(2, variableNum);i++) {
+            for (int i = 0; i < Math.pow(2, nrOfVariables);i++) {
                 LinearProgram copy = new LinearProgram(lp);
                 String bin = Integer.toBinaryString(i);
-                while (bin.length() < variableNum) {
+                while (bin.length() < nrOfVariables) {
                     bin = "0" + bin;
                 }
-                for (int j = 0; j<variableNum; j++) {
+                for (int j = 0; j < nrOfVariables; j++) {
                     if (bin.charAt(j) == '1') {
                         indices.add(j);
                     }
@@ -299,7 +297,7 @@ public class NewGenerator {
         ArrayList<Constraint> c_list = new ArrayList<>();
         c_list.add(c1);
         c_list.add(c2);
-        return new LinearProgram(obj, c_list, variables);
+        return new LinearProgram(obj, c_list, nrOfVariables);
     }
 
     private double getRandomSignIntegerOne() {

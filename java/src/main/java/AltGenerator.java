@@ -176,7 +176,7 @@ public class AltGenerator {
         }
 
         private LinearProgram flipSigns(LinearProgram lp, boolean originallyFeasible) {
-            int variableNum = lp.getVariables().size();
+            int variableNum = nrOfVariables;
             ArrayList<Integer> indices = new ArrayList<>();
 
             for (int i = 0; i<Math.pow(2, variableNum);i++) {
@@ -292,7 +292,7 @@ public class AltGenerator {
         ArrayList<Constraint> c_list = new ArrayList<>();
         c_list.add(c1);
         c_list.add(c2);
-        return new LinearProgram(obj, c_list, variables);
+        return new LinearProgram(obj, c_list, nrOfVariables);
     }
 
 }
