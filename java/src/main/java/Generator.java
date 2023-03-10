@@ -82,21 +82,22 @@ public class Generator {
         }
 
         public void run() {
-            var start = System.currentTimeMillis();
-            while(notFinishedNegative()) {
-                numberOfRounds++;
-                generateNegativeExamples();
-
-            }
-            var end = System.currentTimeMillis();
-            System.out.println("Negatives generation time: " + (end - start) + " ms");
-
-            var start1 = System.currentTimeMillis();
-            while (notFinishedPositive()) {
-                generatePositiveExamples();
-            }
-            var end1 = System.currentTimeMillis();
-            System.out.println("Positives generation time: " + (end1 - start1) + " ms");
+            testFeasibilityMetrics();
+//            var start = System.currentTimeMillis();
+//            while(notFinishedNegative()) {
+//                numberOfRounds++;
+//                generateNegativeExamples();
+//
+//            }
+//            var end = System.currentTimeMillis();
+//            System.out.println("Negatives generation time: " + (end - start) + " ms");
+//
+//            var start1 = System.currentTimeMillis();
+//            while (notFinishedPositive()) {
+//                generatePositiveExamples();
+//            }
+//            var end1 = System.currentTimeMillis();
+//            System.out.println("Positives generation time: " + (end1 - start1) + " ms");
         }
 
         int nmrFeasible1 = 0;
@@ -237,6 +238,18 @@ public class Generator {
             return ret;
         }
 
+        void testFeasibilityMetrics() {
+            int feasible = 0;
+            int infeasible = 0;
+            for (int i=0; i<10000;i++) {
+
+                LinearProgram lp = generateLinearProgram(nrOfVariables);
+                if (solve(lp)) feasible++;
+                else infeasible++;
+            }
+            System.out.println("Feasible: " + feasible + "Infeasible " + infeasible);
+        }
+
         private void writeDataToArray(String[] input1, int input2) {
             var str1 = getCsvRowFromStrArray(input1);
             var str2 = String.valueOf(input2);
@@ -322,16 +335,16 @@ public class Generator {
         ArrayList<Variable> variables = new ArrayList<>();
 
         for (int i = 0; i < nrOfVariables; i++) {
-            obj_data.add((double)rand.nextInt(-10, 10));
-            const_coef.add((double)rand.nextInt(-10, 10));
-            const_coef2.add((double)rand.nextInt(-10, 10));
-            variables.add(new Variable(0.0, infinity, "var" + i));
+            obj_data.add(getRandomSignIntegerOne());
+            const_coef.add(getRandomSignIntegerOne());
+            const_coef2.add(getRandomSignIntegerOne());
+            variables.add(new Variable(0.0, 1.0, "var" + i));
         }
 
         Objective obj = new Objective(obj_data);
 
-        Constraint c1 = new Constraint(-infinity, rand.nextInt(100), "c1", const_coef);
-        Constraint c2 = new Constraint(rand.nextInt(-100, 0), infinity, "c2", const_coef2);
+        Constraint c1 = new Constraint(-infinity, rand.nextInt(10), "c1", const_coef);
+        Constraint c2 = new Constraint(rand.nextInt(-10, 0), infinity, "c2", const_coef2);
 
         ArrayList<Constraint> c_list = new ArrayList<>();
         c_list.add(c1);
