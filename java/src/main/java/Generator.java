@@ -41,9 +41,6 @@ public class Generator {
         MPConstraint secondConstraint;
         MPObjective objective;
 
-        int numberOfRounds = 0;
-        int numberOfSolvables = 0;
-        int numberOfUseful = 0;
         private double objectiveConst;
 
         public Worker(String threadName, String[] outputArrayRef, String[] bofArrayRef, int nrOfVariables, int count) {
@@ -82,41 +79,32 @@ public class Generator {
         }
 
         public void run() {
-            testFeasibilityMetrics();
-//            var start = System.currentTimeMillis();
-//            while(notFinishedNegative()) {
-//                numberOfRounds++;
-//                generateNegativeExamples();
-//
-//            }
-//            var end = System.currentTimeMillis();
-//            System.out.println("Negatives generation time: " + (end - start) + " ms");
-//
-//            var start1 = System.currentTimeMillis();
-//            while (notFinishedPositive()) {
-//                generatePositiveExamples();
-//            }
-//            var end1 = System.currentTimeMillis();
-//            System.out.println("Positives generation time: " + (end1 - start1) + " ms");
+            //testFeasibilityMetrics();
+            var start = System.currentTimeMillis();
+            while(notFinishedNegative()) {
+                generateNegativeExamples();
+
+            }
+            var end = System.currentTimeMillis();
+            System.out.println("Negatives generation time: " + (end - start) + " ms");
+
+            var start1 = System.currentTimeMillis();
+            while (notFinishedPositive()) {
+                generatePositiveExamples();
+            }
+            var end1 = System.currentTimeMillis();
+            System.out.println("Positives generation time: " + (end1 - start1) + " ms");
         }
 
-        int nmrFeasible1 = 0;
-        int nmrNotFeasible1 = 0;
+
 
         private void generateNegativeExamples() {
             LinearProgram lp = generateLinearProgram(nrOfVariables);
-            boolean feasible = solve(lp);
-            if (feasible) {
-                nmrFeasible1++;
-                numberOfSolvables++;
-                objectiveConst = solver.objective().value();
-                objectiveConst = flipSignsNegative(lp);
-            }
-            else {
-                nmrNotFeasible1++;
-                System.out.println("Negative feasible ratio: feasible: " + nmrFeasible1 + " notfeasible1: " + nmrNotFeasible1);
-                return;
-            }
+            solve(lp);
+
+            objectiveConst = solver.objective().value();
+            objectiveConst = flipSignsNegative(lp);
+
             negativeLock.writeLock().lock();
             positiveLock.writeLock().lock();
             negative++;
@@ -124,25 +112,14 @@ public class Generator {
             positiveLock.writeLock().unlock();
             negativeLock.writeLock().unlock();
         }
-
-        int nmrFeasible = 0;
-        int nmrNotFeasible = 0;
-
         private void generatePositiveExamples() {
             LinearProgram lp = generateLinearProgram(nrOfVariables);
-            boolean feasible = solve(lp);
+            solve(lp);
             boolean valid = false;
 
-            if (feasible) {
-                nmrFeasible++;
-                objectiveConst = solver.objective().value();
-                valid = flipSignsPositive(lp);
-            }
-            else {
-                nmrNotFeasible++;
-                System.out.println("Positive feasible ratio: feasible: " + nmrFeasible + " notfeasible1: " + nmrNotFeasible);
-                return;
-            }
+            objectiveConst = solver.objective().value();
+            valid = flipSignsPositive(lp);
+
             if (!valid) {
                 return;
             }
@@ -156,7 +133,6 @@ public class Generator {
 
         private double flipSignsNegative(LinearProgram lp) {
             int[] indices = new int[2];
-
             for (int i = 0; i<nrOfVariables; i++) {
                 for (int j = i+1; j<nrOfVariables; j++) {
                     LinearProgram copy = new LinearProgram(lp);
@@ -221,7 +197,7 @@ public class Generator {
         private boolean notFinishedPositive() {
             if (debug_count > 100)
             {
-               System.out.println("Positives: " + positive);
+               //System.out.println("Positives: " + positive);
                 debug_count = 0;
             }
             else {
@@ -244,8 +220,13 @@ public class Generator {
             for (int i=0; i<10000;i++) {
 
                 LinearProgram lp = generateLinearProgram(nrOfVariables);
-                if (solve(lp)) feasible++;
-                else infeasible++;
+                if (solve(lp)) {
+                    feasible++;
+                }
+                else {
+                    infeasible++;
+                    System.out.println(solver.exportModelAsLpFormat());
+                }
             }
             System.out.println("Feasible: " + feasible + " Infeasible " + infeasible);
         }
@@ -341,10 +322,8 @@ public class Generator {
 
         Objective obj = new Objective(obj_data);
 
-        //Constraint c1 = new Constraint(-infinity, rand.nextInt(-1, 2) * 0.5, "c1", const_coef);
-        //Constraint c2 = new Constraint(-infinity, rand.nextInt(-1, 2) * 0.5, "c2", const_coef2);
-        Constraint c1 = new Constraint(rand.nextInt(-1, 2) * 0.5, infinity, "c1", const_coef);
-        Constraint c2 = new Constraint(-infinity, rand.nextInt(-1, 2) * 0.5, "c2", const_coef2);
+        Constraint c1 = new Constraint(-infinity, rand.nextInt(nrOfVariables), "c1", const_coef);
+        Constraint c2 = new Constraint(-infinity, rand.nextInt(nrOfVariables), "c2", const_coef2);
 
         ArrayList<Constraint> c_list = new ArrayList<>();
         c_list.add(c1);
