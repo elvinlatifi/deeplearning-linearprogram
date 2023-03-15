@@ -60,7 +60,7 @@ public class Generator {
         private void initializeSolver() {
             this.solver = MPSolver.createSolver("GLOP");
             for (int i = 0; i < nrOfVariables; i++) {
-                mpVariables.add(solver.makeNumVar(0.0, 1.0, "var" + i));
+                mpVariables.add(solver.makeNumVar(0.0, 10.0, "var" + i));
             }
         }
 
@@ -104,6 +104,7 @@ public class Generator {
 
             objectiveConst = solver.objective().value();
             objectiveConst = flipSignsNegative(lp);
+            objectiveConst = Math.round(objectiveConst);
 
             negativeLock.writeLock().lock();
             positiveLock.writeLock().lock();
@@ -118,6 +119,8 @@ public class Generator {
             boolean valid = false;
 
             objectiveConst = solver.objective().value();
+            objectiveConst = Math.round(objectiveConst);
+
             valid = flipSignsPositive(lp);
 
             if (!valid) {
@@ -252,6 +255,9 @@ public class Generator {
             for (int i = 0; i < input.length; i++) {
                 output += input[i] + ", ";
             }
+
+
+
             output += objectiveConst;
 
             return output;
@@ -315,15 +321,15 @@ public class Generator {
         ArrayList<Double> const_coef2 = new ArrayList<>();
 
         for (int i = 0; i < nrOfVariables; i++) {
-            obj_data.add(getRandomSignIntegerOne());
-            const_coef.add(getRandomSignIntegerOne());
-            const_coef2.add(getRandomSignIntegerOne());
+            obj_data.add(getRandomNumberLiterally());
+            const_coef.add(getRandomNumberLiterally());
+            const_coef2.add(getRandomNumberLiterally());
         }
 
         Objective obj = new Objective(obj_data);
 
-        Constraint c1 = new Constraint(-infinity, rand.nextInt(nrOfVariables), "c1", const_coef);
-        Constraint c2 = new Constraint(-infinity, rand.nextInt(nrOfVariables), "c2", const_coef2);
+        Constraint c1 = new Constraint(-infinity, rand.nextInt(100), "c1", const_coef);
+        Constraint c2 = new Constraint(-infinity, rand.nextInt(100), "c2", const_coef2);
 
         ArrayList<Constraint> c_list = new ArrayList<>();
         c_list.add(c1);
@@ -334,5 +340,10 @@ public class Generator {
 
     private double getRandomSignIntegerOne() {
         return Math.random() > 0.5 ? -1 : 1;
+    }
+
+    private double getRandomNumberLiterally()
+    {
+        return rand.nextInt(-10, 10);
     }
 }

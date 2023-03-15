@@ -5,7 +5,7 @@ import numpy as np
 from keras.utils import np_utils
 from sklearn.model_selection import train_test_split
 
-num_var = 30
+num_var = 4
 
 # Load the input data and binary output features from the csv files
 x = np.genfromtxt('../dataset/var' + str(num_var) + '/output.csv', delimiter=',')

@@ -105,8 +105,7 @@ public class LinearProgram {
         }
 
         // Get lower bound
-        data.add(constraints.get(1).getLb());
-
+        data.add(constraints.get(1).getUb());
 
         String[] arr = new String[data.size()];
         int i = 0;

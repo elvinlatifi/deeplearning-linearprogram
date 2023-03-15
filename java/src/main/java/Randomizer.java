@@ -45,7 +45,7 @@ public class Randomizer {
             case 1:
                 if (args[0].equals("DEBUG"))
                 {
-                    GenerateDataset(500, 100, 20, dataset_path);
+                    GenerateDataset(50, 4, 20, dataset_path);
                 }
                 break;
             case 4:
