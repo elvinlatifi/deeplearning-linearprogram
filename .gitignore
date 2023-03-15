@@ -1,6 +1,4 @@
 test/
-dataset/
-python/*.h5
 
 # sublime project files
 python/python.sublime-project

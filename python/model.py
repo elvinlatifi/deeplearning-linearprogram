@@ -5,7 +5,8 @@ import numpy as np
 from keras.utils import np_utils
 from sklearn.model_selection import train_test_split
 
-num_var = 4
+num_var = 70
+epochs = 20
 
 # Load the input data and binary output features from the csv files
 x = np.genfromtxt('../dataset/var' + str(num_var) + '/output.csv', delimiter=',')
@@ -26,7 +27,7 @@ model = tf.keras.models.Sequential([
 model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 
 # Train the model
-model.fit(x_train, y_train, epochs=10, batch_size=100)
+model.fit(x_train, y_train, epochs=epochs, batch_size=100)
 
 # Evaluate the model on the validation set
 val_loss, val_accuracy = model.evaluate(x_val, y_val)
@@ -34,7 +35,7 @@ print('Validation Loss:', val_loss)
 print('Validation Accuracy:', val_accuracy)
 
 # Save the model
-model.save('../dataset/var' + str(num_var) + '/model.h5')
+model.save('../models/var' + str(num_var) + '/model' + epochs + '.h5')
 
 # How to load a model:
 # keras.models.load_model()
