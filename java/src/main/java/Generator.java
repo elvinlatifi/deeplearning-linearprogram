@@ -79,7 +79,6 @@ public class Generator {
         }
 
         public void run() {
-            //testFeasibilityMetrics();
             var start = System.currentTimeMillis();
             while(notFinishedNegative()) {
                 generateNegativeExamples();
@@ -217,23 +216,6 @@ public class Generator {
             return ret;
         }
 
-        void testFeasibilityMetrics() {
-            int feasible = 0;
-            int infeasible = 0;
-            for (int i=0; i<10000;i++) {
-
-                LinearProgram lp = generateLinearProgram(nrOfVariables);
-                if (solve(lp)) {
-                    feasible++;
-                }
-                else {
-                    infeasible++;
-                    System.out.println(solver.exportModelAsLpFormat());
-                }
-            }
-            System.out.println("Feasible: " + feasible + " Infeasible " + infeasible);
-        }
-
         private void writeDataToArray(String[] input1, int input2) {
             var str1 = getCsvRowFromStrArray(input1);
             var str2 = String.valueOf(input2);
@@ -321,9 +303,9 @@ public class Generator {
         ArrayList<Double> const_coef2 = new ArrayList<>();
 
         for (int i = 0; i < nrOfVariables; i++) {
-            obj_data.add(getRandomNumberLiterally());
-            const_coef.add(getRandomNumberLiterally());
-            const_coef2.add(getRandomNumberLiterally());
+            obj_data.add(customGetRandomNumber());
+            const_coef.add(customGetRandomNumber());
+            const_coef2.add(customGetRandomNumber());
         }
 
         Objective obj = new Objective(obj_data);
@@ -338,11 +320,7 @@ public class Generator {
         return new LinearProgram(obj, c_list, nrOfVariables);
     }
 
-    private double getRandomSignIntegerOne() {
-        return Math.random() > 0.5 ? -1 : 1;
-    }
-
-    private double getRandomNumberLiterally()
+    private double customGetRandomNumber()
     {
         return rand.nextInt(-10, 10);
     }

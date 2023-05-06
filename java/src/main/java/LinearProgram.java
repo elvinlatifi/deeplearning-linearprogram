@@ -6,12 +6,9 @@ import com.google.ortools.linearsolver.MPVariable;
 import java.util.ArrayList;
 
 public class LinearProgram {
-    transient private boolean convertible;
     private Objective objective;
 
     private ArrayList<Constraint> constraints;
-
-    private String[] binaryOutputFeature;
 
     private int nmrOfVariables;
 
@@ -40,46 +37,8 @@ public class LinearProgram {
         return constraints;
     }
 
-
-    /*
-    protected boolean solve() {
-        MPSolver solver = generateSolver();
-        //System.out.println(solver.exportModelAsLpFormat());
-
-        final MPSolver.ResultStatus resultStatus = solver.solve();
-
-        //System.out.println("ResultStatus: " + resultStatus.toString());
-
-        if (resultStatus == MPSolver.ResultStatus.FEASIBLE || resultStatus == MPSolver.ResultStatus.OPTIMAL) {
-            //System.out.println("Solution:");
-            //System.out.println("Objective value = " + objective.value());
-            //System.out.println("x = " + mpVariables.get(0).solutionValue());
-            //System.out.println("y = " + mpVariables.get(1).solutionValue());
-            solver.clear();
-            return true;
-        } else {
-            //System.err.println("Did not find a solution");
-            solver.clear();
-            return false;
-        }
-
-    }
-    */
-
-    public void flipSign(ArrayList<Integer> indices) {
-        objective.flipSign(indices);
-    }
-    
     public void flipSign(int[] indices) {
         objective.flipSign(indices);
-    }
-
-    public void setConvertible() {
-        convertible = true;
-    }
-
-    public boolean isConvertible() {
-        return convertible;
     }
 
     public String[] getRelevantData() {
@@ -115,24 +74,4 @@ public class LinearProgram {
         }
         return arr;
     }
-    public void setBinaryOutputFeature(String bof) {
-        binaryOutputFeature = new String[nmrOfVariables];
-        for (int i=0;i< nmrOfVariables;i++) {
-            binaryOutputFeature[i] = bof.charAt(i) +"";
-        }
-    }
-
-    public String[] getBinaryOutputFeature() {
-        return binaryOutputFeature;
-    }
-
-    public String getBofAsStr() {
-        String result = "";
-        for (String s : binaryOutputFeature) {
-            result += s;
-        }
-        return result;
-    }
-
-
 }
